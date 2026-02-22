@@ -1,0 +1,24 @@
+import { useChannelName } from '../hooks/useChannelName';
+import type { Principal } from '@icp-sdk/core/principal';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface ChannelNameDisplayProps {
+  principal: Principal;
+  className?: string;
+}
+
+export function ChannelNameDisplay({ principal, className = '' }: ChannelNameDisplayProps) {
+  const { data: channelName, isLoading } = useChannelName(principal);
+
+  if (isLoading) {
+    return <Skeleton className={`h-4 w-24 ${className}`} />;
+  }
+
+  // If channel name is same as principal, show truncated version
+  const principalStr = principal.toString();
+  const displayName = channelName === principalStr
+    ? `${principalStr.slice(0, 8)}...${principalStr.slice(-4)}`
+    : channelName;
+
+  return <span className={className}>{displayName}</span>;
+}

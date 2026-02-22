@@ -1,0 +1,239 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 7,
+  "summary": "A video and photo sharing platform similar to YouTube, where users can upload and share both photos and videos in separate sections with user authentication",
+  "architectural_notes": [
+    "Platform requires separate content management for photos and videos",
+    "User authentication required for upload functionality",
+    "YouTube-like interface with distinct photo and video sections",
+    "Video engagement features required: download, like, and comment functionality",
+    "Channel customization needed for user-defined names",
+    "Video quality selection system required for adaptive streaming"
+  ],
+  "known_issues": [
+    "After upload, galleries appear empty - uploaded content not displaying"
+  ],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-implement-user-authentication-system-using-internet-identity-that-allows-users-to-sign-in-and-maintain-their-identity-across-sessions",
+      "title": "Implement user authentication system using Internet Identity that allows users to sign in and maintain their identity across sessions",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-video-upload-interface-that-allows-authenticated-users-to-upload-video-files-with-title-and-description-fields",
+      "title": "Build video upload interface that allows authenticated users to upload video files with title and description fields",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-photo-upload-interface-that-allows-authenticated-users-to-upload-photo-files-with-title-and-description-fields",
+      "title": "Build photo upload interface that allows authenticated users to upload photo files with title and description fields",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-separate-video-gallery-section-that-displays-all-uploaded-videos-in-a-grid-layout-with-thumbnails-titles-and-uploader-information-similar-to-youtube-s-video-browsing-interface",
+      "title": "Create separate video gallery section that displays all uploaded videos in a grid layout with thumbnails, titles, and uploader information, similar to YouTube's video browsing interface",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-separate-photo-gallery-section-that-displays-all-uploaded-photos-in-a-grid-layout-with-thumbnails-titles-and-uploader-information",
+      "title": "Create separate photo gallery section that displays all uploaded photos in a grid layout with thumbnails, titles, and uploader information",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-video-player-view-that-displays-selected-videos-with-full-metadata-allowing-users-to-watch-uploaded-videos",
+      "title": "Implement video player view that displays selected videos with full metadata, allowing users to watch uploaded videos",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-photo-viewer-that-displays-selected-photos-with-full-metadata-in-a-lightbox-or-detail-view",
+      "title": "Implement photo viewer that displays selected photos with full metadata in a lightbox or detail view",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-design-a-creative-visual-theme-with-modern-media-focused-aesthetics-featuring-bold-colors-clean-typography-and-card-based-layouts-that-emphasize-visual-content-apply-this-design-consistently-across-all-pages-including-galleries-upload-forms-and-media-viewers",
+      "title": "Design a creative visual theme with modern, media-focused aesthetics featuring bold colors, clean typography, and card-based layouts that emphasize visual content. Apply this design consistently across all pages including galleries, upload forms, and media viewers",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-usevideos-hook-to-call-the-backend-listvideos-method-instead-of-returning-an-empty-array",
+      "title": "Update useVideos hook to call the backend listVideos method instead of returning an empty array",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-usephotos-hook-to-call-the-backend-listphotos-method-instead-of-returning-an-empty-array",
+      "title": "Update usePhotos hook to call the backend listPhotos method instead of returning an empty array",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-download-button-to-video-player-page-that-allows-users-to-download-the-video-file-they-are-currently-viewing",
+      "title": "Add download button to video player page that allows users to download the video file they are currently viewing",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-like-functionality-for-videos-that-allows-users-to-like-videos-and-displays-the-total-like-count",
+      "title": "Implement like functionality for videos that allows users to like videos and displays the total like count",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-comment-system-for-videos-that-allows-users-to-post-comments-and-view-all-comments-on-a-video",
+      "title": "Add comment system for videos that allows users to post comments and view all comments on a video",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-allow-users-to-set-and-edit-a-custom-channel-name-instead-of-displaying-their-principal-with-support-for-shorter-custom-names",
+      "title": "Allow users to set and edit a custom channel name instead of displaying their principal, with support for shorter custom names",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-video-quality-selector-to-video-player-that-allows-users-to-choose-playback-quality-for-online-viewing",
+      "title": "Add video quality selector to video player that allows users to choose playback quality for online viewing",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "User authentication system",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Video upload and sharing functionality",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Photo upload and sharing functionality",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Separate galleries/sections for photos and videos",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Create backend data model and storage for video uploads with metadata including title, description, uploader identity, upload timestamp, and video file reference",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Create backend data model and storage for photo uploads with metadata including title, description, uploader identity, upload timestamp, and photo file reference",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Implement backend listVideos method that returns all uploaded videos with their metadata (id, title, description, uploader, timestamp)",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Implement backend listPhotos method that returns all uploaded photos with their metadata (id, title, description, uploader, timestamp)",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Replace the empty state SVG icon at XPath /html[1]/body[1]/div[1]/div[1]/main[1]/div[1]/div[2]/div[1]/svg[1] with appropriate content or loading state when galleries have items",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Add video download option for uploaded videos",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Add like functionality for videos",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add comment system for videos",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Allow users to set and edit channel name with shorter custom names",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Add video quality selection option for online viewing",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "MediaShare",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}
