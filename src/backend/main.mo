@@ -7,7 +7,7 @@ import Iter "mo:core/Iter";
 import Text "mo:core/Text";
 import Set "mo:core/Set";
 import List "mo:core/List";
-
+import Migration "migration";
 
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
@@ -16,6 +16,7 @@ import AccessControl "authorization/access-control";
 
 // Apply migration on upgrades
 
+(with migration = Migration.run)
 actor {
   // Initialize the access control system on canister instantiation
   let accessControlState = AccessControl.initState();
@@ -89,12 +90,26 @@ actor {
     accountCreation : Time.Time;
   };
 
+  // New types for ratings
+  public type Rating = {
+    value : Nat; // 1-5 stars
+    reviewer : Principal;
+    timestamp : Time.Time;
+  };
+
+  public type RatingData = {
+    ratings : [Rating];
+    averageRating : Float;
+    totalRatings : Nat;
+  };
+
   let videos = Map.empty<Text, ExtendedVideo>();
   let photos = Map.empty<Text, Photo>();
   let comments = Map.empty<Text, [Comment]>();
   let videoLikes = Map.empty<Text, Set.Set<Principal>>();
   let channels = Map.empty<Principal, Text>();
   let userProfiles = Map.empty<Principal, UserProfile>();
+  let ratings = Map.empty<Text, RatingData>();
 
   // User profile management functions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -141,6 +156,15 @@ actor {
       viewCount = 0;
     };
     videos.add(videoId, video);
+
+    // Initialize empty rating data for the video
+    let initialRatingData : RatingData = {
+      ratings = [];
+      averageRating = 0.0;
+      totalRatings = 0;
+    };
+    ratings.add(videoId, initialRatingData);
+
     videoId;
   };
 
@@ -160,8 +184,8 @@ actor {
     photoId;
   };
 
-  // incrementVideoViewCount: No authentication required - anyone (including guests) can increment view counts
-  public shared ({ caller }) func incrementVideoViewCount(videoId : Text) : async () {
+  // incrementViewCount: No authentication required - anyone (including guests) can increment view counts
+  public shared ({ caller }) func incrementViewCount(videoId : Text) : async () {
     switch (videos.get(videoId)) {
       case (null) { Runtime.trap("Failed to increment view count: video not found") };
       case (?video) {
@@ -367,6 +391,7 @@ actor {
         videos.remove(videoId);
         comments.remove(videoId);
         videoLikes.remove(videoId);
+        ratings.remove(videoId); // Remove ratings when deleting video
       };
     };
   };
@@ -550,5 +575,149 @@ actor {
     let updatedVideo = { video with thumbnail = null };
     videos.add(videoId, updatedVideo);
   };
-};
 
+  // ========== Rating System Functions ==========
+
+  // Submit or update a rating for a video
+  public shared ({ caller }) func rateVideo(videoId : Text, stars : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can rate videos");
+    };
+
+    if (stars < 1 or stars > 5) {
+      Runtime.trap("Invalid rating value. Must be between 1 and 5 stars");
+    };
+
+    switch (videos.get(videoId)) {
+      case (null) { Runtime.trap("Video not found") };
+      case (?_) {
+        let existingRatings = switch (ratings.get(videoId)) {
+          case (null) { { ratings = []; averageRating = 0.0; totalRatings = 0 } };
+          case (?data) { data };
+        };
+
+        // Remove old rating from the reviewer if exists (and get old rating value if exists)
+        var oldRating : ?Nat = null;
+        let filteredRatings = existingRatings.ratings.filter(
+          func(r) {
+            if (r.reviewer == caller) {
+              oldRating := ?r.value;
+              false;
+            } else {
+              true;
+            };
+          }
+        );
+
+        // Add new (or updated) rating
+        let newRating : Rating = {
+          value = stars;
+          reviewer = caller;
+          timestamp = Time.now();
+        };
+        let updatedRatings = filteredRatings.concat([newRating]);
+
+        // Update running total to avoid summing all ratings every time
+        let newTotalRatings = switch (oldRating) {
+          case (null) { existingRatings.totalRatings + stars };
+          case (?old) {
+            if (stars > old) {
+              existingRatings.totalRatings + (stars - old);
+            } else {
+              existingRatings.totalRatings - (old - stars);
+            };
+          };
+        };
+
+        // Update average rating calculation
+        let updatedRatingData : RatingData = {
+          ratings = updatedRatings;
+          averageRating = newTotalRatings.toFloat() / updatedRatings.size().toFloat();
+          totalRatings = newTotalRatings;
+        };
+
+        ratings.add(videoId, updatedRatingData);
+      };
+    };
+  };
+
+  // Get the current average rating for a video
+  public query ({ caller }) func getAverageRating(videoId : Text) : async Float {
+    switch (ratings.get(videoId)) {
+      case (null) { 0.0 };
+      case (?data) { data.averageRating };
+    };
+  };
+
+  // Get the total number of ratings for a video
+  public query ({ caller }) func getTotalRatings(videoId : Text) : async Nat {
+    switch (ratings.get(videoId)) {
+      case (null) { 0 };
+      case (?data) { data.ratings.size() };
+    };
+  };
+
+  // Get all ratings for a specific video
+  public query ({ caller }) func getAllVideoRatings(videoId : Text) : async [Rating] {
+    switch (ratings.get(videoId)) {
+      case (null) { [] };
+      case (?data) { data.ratings };
+    };
+  };
+
+  // Get all ratings submitted by the current caller
+  public query ({ caller }) func getUserRatings() : async [(Text, Rating)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view their ratings");
+    };
+
+    let results = List.empty<(Text, Rating)>();
+
+    for ((videoId, ratingData) in ratings.entries()) {
+      for (r in ratingData.ratings.values()) {
+        if (r.reviewer == caller) {
+          results.add((videoId, r));
+        };
+      };
+    };
+
+    results.toArray();
+  };
+
+  // Get rating analytics for a specific video
+  public query ({ caller }) func getRatingAnalytics(videoId : Text) : async {
+    averageRating : Float;
+    totalRatings : Nat;
+    ratingBreakdown : [Nat];
+  } {
+    // ratingBreakdown is an array where [count1Star, count2Stars, ..., count5Stars]
+    switch (ratings.get(videoId)) {
+      case (null) {
+        {
+          averageRating = 0.0;
+          totalRatings = 0;
+          ratingBreakdown = [0, 0, 0, 0, 0];
+        };
+      };
+      case (?data) {
+        var breakdown = [0, 0, 0, 0, 0];
+        for (rating in data.ratings.values()) {
+          switch (rating.value) {
+            case (1) { breakdown := [breakdown[0] + 1, breakdown[1], breakdown[2], breakdown[3], breakdown[4]] };
+            case (2) { breakdown := [breakdown[0], breakdown[1] + 1, breakdown[2], breakdown[3], breakdown[4]] };
+            case (3) { breakdown := [breakdown[0], breakdown[1], breakdown[2] + 1, breakdown[3], breakdown[4]] };
+            case (4) { breakdown := [breakdown[0], breakdown[1], breakdown[2], breakdown[3] + 1, breakdown[4]] };
+            case (5) { breakdown := [breakdown[0], breakdown[1], breakdown[2], breakdown[3], breakdown[4] + 1] };
+            case (_) {};
+          };
+        };
+
+        {
+          averageRating = data.averageRating;
+          totalRatings = data.ratings.size();
+          ratingBreakdown = breakdown;
+        };
+      };
+    };
+  };
+};

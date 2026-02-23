@@ -8,7 +8,7 @@ export function useIncrementVideoView() {
   return useMutation({
     mutationFn: async (videoId: string) => {
       if (!actor) throw new Error('Actor not available');
-      await actor.incrementVideoViewCount(videoId);
+      await actor.incrementViewCount(videoId);
     },
     onSuccess: (_, videoId) => {
       // Invalidate video queries to refresh view count

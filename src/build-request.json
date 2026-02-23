@@ -1,134 +1,116 @@
 {
   "kind": "build_request",
-  "title": "Create video player page with player, metadata, comments, and related videos",
-  "projectName": "YouTube Clone",
+  "title": "Add 5-star rating system, view counter, and share functionality",
+  "projectName": "MediaShare",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
-      "target": "frontend",
+      "text": "Implement a 5-star rating system on the Video Player page that allows users to rate videos from 1 to 5 stars, styled like the original 2005 YouTube star rating system",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-last"
         ],
         "quotes": [
-          "navigate to a view that features a large HTML5 Video Player"
+          "Implement a 5-Star Rating system just like the original 2005 YouTube"
         ]
       },
       "acceptanceCriteria": [
-        "Video player is prominently displayed at the top of the page",
-        "Player uses HTML5 video element",
-        "Video plays when user clicks on a video card from the homepage"
+        "Display 5 clickable star icons on the VideoPlayer page",
+        "Clicking a star sets the rating for that video (1-5 stars)",
+        "Visual feedback shows which stars are selected",
+        "Style matches the classic 2005 YouTube aesthetic",
+        "Users can change their rating by clicking a different star"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Display video title in bold below the video player",
-      "target": "frontend",
+      "text": "Store video ratings in the backend database, associating each rating with the specific video ID and user principal who submitted it",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-last"
         ],
         "quotes": [
-          "add the video title (bold)"
+          "Make sure the ratings and views are saved in the database for each specific video"
         ]
       },
       "acceptanceCriteria": [
-        "Video title is displayed below the player",
-        "Title text is bold",
-        "Title matches the video metadata"
+        "Backend stores rating value (1-5) per video per user",
+        "Users can update their existing rating",
+        "Ratings persist across sessions",
+        "Backend calculates and returns average rating for each video"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add a Subscribe button next to the channel name below the video player",
-      "target": "both",
+      "text": "Display the average star rating and total number of ratings for each video on the Video Player page",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-last"
         ],
         "quotes": [
-          "a 'Subscribe' button next to the channel name"
+          "Implement a 5-Star Rating system"
         ]
       },
       "acceptanceCriteria": [
-        "Subscribe button appears next to the channel name",
-        "Button is visually distinct and clickable",
-        "Backend tracks subscription relationships between users and channels",
-        "Button shows subscribed state if user is already subscribed"
+        "Show average rating as filled/half-filled stars",
+        "Display rating count (e.g., '4.2 stars (156 ratings)')",
+        "Update display when user submits a new rating"
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Add an expandable description box below the video metadata that can be collapsed and expanded",
-      "target": "frontend",
+      "text": "Add a view counter to each video that increments every time the Video Player page is loaded for that specific video",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-last"
         ],
         "quotes": [
-          "a description box that can expand"
+          "Add a View Counter that increments every time the page is loaded"
         ]
       },
       "acceptanceCriteria": [
-        "Description box is initially collapsed or truncated",
-        "User can click to expand the full description",
-        "User can collapse the description after expanding",
-        "Description content matches video metadata"
+        "View count increments when VideoPlayer page loads",
+        "Backend persists view count for each video",
+        "View count displays on the Video Player page using existing formatNumber utility",
+        "Multiple page loads by the same user count as separate views"
       ]
     },
     {
       "id": "REQ-5",
-      "text": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+      "text": "Add a 'Share' button on the Video Player page that copies the current video URL to the user's clipboard",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-last"
         ],
         "quotes": [
-          "Add a Comments Section at the bottom with a text input for 'Add a comment'"
+          "Add a 'Share' button that copies the current URL to the clipboard"
         ]
       },
       "acceptanceCriteria": [
-        "Comments section is positioned at the bottom of the page",
-        "Text input field is labeled 'Add a comment'",
-        "Existing comments are displayed above the input",
-        "New comments appear after submission"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "show a list of 'Related Videos' in a smaller vertical list format"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Related videos list appears on the right side of the player",
-        "Videos are displayed in a vertical list format",
-        "Video cards are smaller than the main homepage grid cards",
-        "Clicking a related video navigates to that video's player page",
-        "List shows at least 5-10 related videos"
+        "Share button is visible on the VideoPlayer page",
+        "Clicking the button copies the full video URL to clipboard",
+        "Show a toast notification confirming successful copy",
+        "Button works on all modern browsers that support clipboard API"
       ]
     }
   ],
   "constraints": [
-    "Use existing CommentSection component for comments functionality",
-    "Maintain existing VideoPlayer page structure and routing from frontend/src/pages/VideoPlayer.tsx",
-    "Keep existing video metadata fetching logic using useVideo hook",
-    "Preserve dark mode theme with red accent colors"
+    "Use the existing video data model in backend/main.mo",
+    "Maintain the existing VideoPlayer page layout and structure",
+    "Follow the YouTube-style dark theme established in the application",
+    "Use the existing useIncrementVideoView hook pattern for view counting"
   ],
   "nonGoals": [
-    "Video recommendation algorithm (use simple related videos logic like same uploader or recent videos)",
-    "Advanced video player controls beyond HTML5 defaults",
-    "Playlist functionality",
-    "Video sharing or embedding features"
+    "Adding rating systems to photos",
+    "Implementing rating displays on video cards in gallery view",
+    "Adding social sharing to external platforms",
+    "Creating a 'like/dislike' system separate from stars"
   ],
   "imageRequirements": {
     "required": [],

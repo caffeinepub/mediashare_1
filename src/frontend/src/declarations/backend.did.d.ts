@@ -43,6 +43,11 @@ export interface PhotoMetadata {
   'uploader' : Principal,
   'uploadTime' : Time,
 }
+export interface Rating {
+  'value' : bigint,
+  'timestamp' : Time,
+  'reviewer' : Principal,
+}
 export type Time = bigint;
 export interface UserProfile {
   'channelName' : [] | [string],
@@ -110,21 +115,34 @@ export interface _SERVICE {
   'deleteComment' : ActorMethod<[string, bigint], undefined>,
   'deletePhoto' : ActorMethod<[string], undefined>,
   'deleteVideo' : ActorMethod<[string], undefined>,
+  'getAllVideoRatings' : ActorMethod<[string], Array<Rating>>,
+  'getAverageRating' : ActorMethod<[string], number>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getChannelName' : ActorMethod<[Principal], string>,
   'getComments' : ActorMethod<[string], Array<Comment>>,
   'getPhoto' : ActorMethod<[string], Photo>,
+  'getRatingAnalytics' : ActorMethod<
+    [string],
+    {
+      'totalRatings' : bigint,
+      'ratingBreakdown' : Array<bigint>,
+      'averageRating' : number,
+    }
+  >,
+  'getTotalRatings' : ActorMethod<[string], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getUserRatings' : ActorMethod<[], Array<[string, Rating]>>,
   'getUserStats' : ActorMethod<[Principal], UserStats>,
   'getVideo' : ActorMethod<[string], ExtendedVideo>,
   'getVideoMetadata' : ActorMethod<[string], VideoMetadata>,
-  'incrementVideoViewCount' : ActorMethod<[string], undefined>,
+  'incrementViewCount' : ActorMethod<[string], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'likeVideo' : ActorMethod<[string], undefined>,
   'listPhotos' : ActorMethod<[], Array<PhotoMetadata>>,
   'listVideos' : ActorMethod<[], Array<VideoMetadata>>,
   'markThumbnailGenerated' : ActorMethod<[string, ExternalBlob], undefined>,
+  'rateVideo' : ActorMethod<[string, bigint], undefined>,
   'removeThumbnail' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchVideos' : ActorMethod<[string], Array<VideoMetadata>>,

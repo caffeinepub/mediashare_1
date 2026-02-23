@@ -1,55 +1,59 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-23T07:16:31.321Z",
+  "generatedAt": "2026-02-23T08:14:23.000Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 6,
-    "implemented": 6,
+    "total": 5,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
+        "summary": "Implement a 5-star rating system on the Video Player page that allows users to rate videos from 1 to 5 stars, styled like the original 2005 YouTube star rating system",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/components/VideoRating.tsx",
+          "frontend/src/hooks/useRateVideo.ts",
+          "frontend/src/hooks/useGetUserRating.ts",
           "frontend/src/pages/VideoPlayer.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/components/VideoRating.tsx",
+          "frontend/src/hooks/useRateVideo.ts",
+          "frontend/src/hooks/useGetUserRating.ts",
           "frontend/src/pages/VideoPlayer.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Display video title in bold below the video player",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/VideoPlayer.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/VideoPlayer.tsx"
-        ]
+        "summary": "Store video ratings in the backend database, associating each rating with the specific video ID and user principal who submitted it",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Add a Subscribe button next to the channel name below the video player",
+        "summary": "Display the average star rating and total number of ratings for each video on the Video Player page",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/hooks/useSubscribe.ts",
-          "frontend/src/hooks/useSubscriptionStatus.ts"
+          "frontend/src/components/VideoRatingDisplay.tsx",
+          "frontend/src/hooks/useAverageRating.ts",
+          "frontend/src/hooks/useTotalRatings.ts",
+          "frontend/src/components/VideoRating.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/hooks/useSubscribe.ts",
-          "frontend/src/hooks/useSubscriptionStatus.ts"
+          "frontend/src/components/VideoRatingDisplay.tsx",
+          "frontend/src/hooks/useAverageRating.ts",
+          "frontend/src/hooks/useTotalRatings.ts",
+          "frontend/src/components/VideoRating.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Add an expandable description box below the video metadata that can be collapsed and expanded",
+        "summary": "Add a view counter to each video that increments every time the Video Player page is loaded for that specific video",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/VideoPlayer.tsx"
@@ -60,39 +64,38 @@
       },
       {
         "id": "REQ-5",
-        "summary": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+        "summary": "Add a 'Share' button on the Video Player page that copies the current video URL to the user's clipboard",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/components/ShareButton.tsx",
           "frontend/src/pages/VideoPlayer.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/components/ShareButton.tsx",
           "frontend/src/pages/VideoPlayer.tsx"
-        ]
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/components/VideoCard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/components/VideoCard.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/VideoCard.tsx",
-    "frontend/src/hooks/useSubscribe.ts",
-    "frontend/src/hooks/useSubscriptionStatus.ts",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/ShareButton.tsx",
+    "frontend/src/components/VideoRating.tsx",
+    "frontend/src/components/VideoRatingDisplay.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useAverageRating.ts",
+    "frontend/src/hooks/useGetUserRating.ts",
+    "frontend/src/hooks/useIncrementVideoView.ts",
+    "frontend/src/hooks/useRateVideo.ts",
+    "frontend/src/hooks/useTotalRatings.ts",
     "frontend/src/pages/VideoPlayer.tsx",
     "project_state.json",
     "scratch/component-selection.json",

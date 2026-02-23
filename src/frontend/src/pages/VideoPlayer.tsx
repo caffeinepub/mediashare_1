@@ -8,11 +8,13 @@ import { useSubscribe } from '../hooks/useSubscribe';
 import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Share2, Edit, Heart, Bell, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Edit, Heart, Bell, ChevronDown, ChevronUp } from 'lucide-react';
 import { CommentSection } from '../components/CommentSection';
 import { ChannelNameDisplay } from '../components/ChannelNameDisplay';
 import { VideoEditModal } from '../components/VideoEditModal';
 import { VideoCard } from '../components/VideoCard';
+import { VideoRating } from '../components/VideoRating';
+import { ShareButton } from '../components/ShareButton';
 import { formatViewCount } from '../utils/formatters';
 import { useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -65,16 +67,6 @@ export default function VideoPlayer() {
     // Combine and limit to 10 videos
     return [...sameUploader, ...otherVideos].slice(0, 10);
   }, [allVideos, video, id]);
-
-  const handleShare = async () => {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Video link copied to clipboard!');
-    } catch (err) {
-      toast.error('Failed to copy link');
-    }
-  };
 
   const handleLike = () => {
     if (!identity) {
@@ -151,8 +143,8 @@ export default function VideoPlayer() {
           {/* Video title */}
           <h1 className="text-2xl font-bold mb-3">{video.title}</h1>
 
-          {/* Channel info and subscribe button */}
-          <div className="flex items-center justify-between mb-4 pb-4 border-b">
+          {/* Channel info and action buttons */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 pb-4 border-b">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center shrink-0">
@@ -184,7 +176,7 @@ export default function VideoPlayer() {
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 variant="outline"
                 size="default"
@@ -196,10 +188,7 @@ export default function VideoPlayer() {
                 <span className="font-semibold">{Number(video.likeCount)}</span>
               </Button>
 
-              <Button variant="outline" size="default" onClick={handleShare} className="gap-2">
-                <Share2 className="h-5 w-5" />
-                <span className="hidden sm:inline">Share</span>
-              </Button>
+              <ShareButton />
 
               {isOwner && (
                 <Button variant="outline" size="default" onClick={() => setEditOpen(true)} className="gap-2">
@@ -208,6 +197,11 @@ export default function VideoPlayer() {
                 </Button>
               )}
             </div>
+          </div>
+
+          {/* Rating section */}
+          <div className="bg-muted/30 rounded-lg p-4 mb-4 border border-border">
+            <VideoRating videoId={id} />
           </div>
 
           {/* Expandable description */}

@@ -2,9 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-videoplayer-page-to-display-a-large-html5-video-player-at-the-top-of-the-page-when-a-video-card-is-clicked",
-      "featureTitle": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
+      "featureId": "feature-implement-a-5-star-rating-system-on-the-video-player-page-that-allows-users-to-rate-videos-from-1-to-5-stars-styled-like-the-original-2005-youtube-star-rating-system",
+      "featureTitle": "Implement a 5-star rating system on the Video Player page that allows users to rate videos from 1 to 5 stars, styled like the original 2005 YouTube star rating system",
       "files": [
+        "frontend/src/components/VideoRating.tsx",
+        "frontend/src/hooks/useGetUserRating.ts",
+        "frontend/src/hooks/useRateVideo.ts",
         "frontend/src/pages/VideoPlayer.tsx"
       ],
       "components": [
@@ -22,32 +25,13 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-display-video-title-in-bold-below-the-video-player",
-      "featureTitle": "Display video title in bold below the video player",
+      "featureId": "feature-display-the-average-star-rating-and-total-number-of-ratings-for-each-video-on-the-video-player-page",
+      "featureTitle": "Display the average star rating and total number of ratings for each video on the Video Player page",
       "files": [
-        "frontend/src/pages/VideoPlayer.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-a-subscribe-button-next-to-the-channel-name-below-the-video-player",
-      "featureTitle": "Add a Subscribe button next to the channel name below the video player",
-      "files": [
-        "frontend/src/hooks/useSubscribe.ts",
-        "frontend/src/hooks/useSubscriptionStatus.ts",
-        "frontend/src/pages/VideoPlayer.tsx"
+        "frontend/src/components/VideoRating.tsx",
+        "frontend/src/components/VideoRatingDisplay.tsx",
+        "frontend/src/hooks/useAverageRating.ts",
+        "frontend/src/hooks/useTotalRatings.ts"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -64,8 +48,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-an-expandable-description-box-below-the-video-metadata-that-can-be-collapsed-and-expanded",
-      "featureTitle": "Add an expandable description box below the video metadata that can be collapsed and expanded",
+      "featureId": "feature-add-a-view-counter-to-each-video-that-increments-every-time-the-video-player-page-is-loaded-for-that-specific-video",
+      "featureTitle": "Add a view counter to each video that increments every time the Video Player page is loaded for that specific video",
       "files": [
         "frontend/src/pages/VideoPlayer.tsx"
       ],
@@ -84,9 +68,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-comments-section-at-the-bottom-of-the-video-player-page-with-a-text-input-for-add-a-comment",
-      "featureTitle": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+      "featureId": "feature-add-a-share-button-on-the-video-player-page-that-copies-the-current-video-url-to-the-user-s-clipboard",
+      "featureTitle": "Add a 'Share' button on the Video Player page that copies the current video URL to the user's clipboard",
       "files": [
+        "frontend/src/components/ShareButton.tsx",
         "frontend/src/pages/VideoPlayer.tsx"
       ],
       "components": [
@@ -100,27 +85,6 @@
       ],
       "testIds": [
         "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-display-a-list-of-related-videos-on-the-right-side-of-the-video-player-in-a-smaller-vertical-list-format",
-      "featureTitle": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
-      "files": [
-        "frontend/src/components/VideoCard.tsx",
-        "frontend/src/pages/VideoPlayer.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
       ],
       "confidence": "high"
     }

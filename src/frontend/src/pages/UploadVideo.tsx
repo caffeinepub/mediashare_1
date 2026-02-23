@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useVideoUpload } from '../hooks/useVideoUpload';
 import { UpgradePrompt } from '../components/UpgradePrompt';
 import { ThumbnailSelector } from '../components/ThumbnailSelector';
+import { TagInput } from '../components/TagInput';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,14 +17,16 @@ import { Video, Upload, Loader2, CheckCircle2, AlertCircle, RefreshCw } from 'lu
 import { ExternalBlob } from '../backend';
 import { useMemo } from 'react';
 
-const ACCEPTED_VIDEO_FORMATS = ['video/mp4', 'video/webm', 'video/ogg'];
+const ACCEPTED_VIDEO_FORMATS = ['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg'];
 const MAX_FILE_SIZE_MB = 500; // 500MB limit
 
 export function UploadVideo() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { identity } = useInternetIdentity();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
@@ -40,7 +44,7 @@ export function UploadVideo() {
   const validateFile = (file: File): string | null => {
     // Check file type
     if (!ACCEPTED_VIDEO_FORMATS.includes(file.type)) {
-      return `Invalid file format. Please upload a video file (MP4, WebM, or OGG).`;
+      return `Invalid file format. Please upload a video file (MP4, MOV, WebM, or OGG).`;
     }
 
     // Check file size
@@ -80,10 +84,12 @@ export function UploadVideo() {
     }
 
     try {
-      const result = await uploadVideo({ title, description, file });
+      const result = await uploadVideo({ title, description, file, tags });
       if (result) {
         setUploadedVideoId(result.videoId);
         setUploadedVideoBlob(result.videoBlob);
+        // Invalidate videos query to refresh the homepage
+        queryClient.invalidateQueries({ queryKey: ['videos'] });
       }
     } catch (err) {
       // Error is handled by the mutation
@@ -100,6 +106,7 @@ export function UploadVideo() {
   const handleUploadAnother = () => {
     setTitle('');
     setDescription('');
+    setTags([]);
     setFile(null);
     setValidationError(null);
     setUploadedVideoId(null);
@@ -190,7 +197,7 @@ export function UploadVideo() {
                   <AlertDescription className="text-sm">
                     <strong>File Requirements:</strong>
                     <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Accepted formats: MP4, WebM, OGG</li>
+                      <li>Accepted formats: MP4, MOV, WebM, OGG</li>
                       <li>Maximum file size: {MAX_FILE_SIZE_MB}MB</li>
                     </ul>
                   </AlertDescription>
@@ -201,7 +208,7 @@ export function UploadVideo() {
                   <Input
                     id="video-file"
                     type="file"
-                    accept={ACCEPTED_VIDEO_FORMATS.join(',')}
+                    accept=".mp4,.mov,.webm,.ogv,video/mp4,video/quicktime,video/webm,video/ogg"
                     onChange={handleFileChange}
                     disabled={isUploading}
                     required
@@ -240,6 +247,15 @@ export function UploadVideo() {
                     onChange={(e) => setDescription(e.target.value)}
                     disabled={isUploading}
                     rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <TagInput
+                    tags={tags}
+                    onChange={setTags}
+                    disabled={isUploading}
                   />
                 </div>
 

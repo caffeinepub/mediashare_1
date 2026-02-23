@@ -1,60 +1,46 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "YouTube-style video platform with dark mode UI, homepage video grid, and video player pages",
+  "summary": "YouTube-style video platform with upload system and interactive features including 5-star ratings, view counter, and sharing",
   "architectural_notes": [
-    "Video player page requires routing/navigation from homepage video cards",
-    "HTML5 video player component with controls",
-    "Expandable description component for video metadata"
+    "Video upload system using Motoko canisters on Internet Computer",
+    "Upload page with file input accepting .mp4 and .mov formats",
+    "Video metadata storage including title, description, and tags",
+    "Videos display on homepage grid with newest first",
+    "Database persistence for ratings and view counts per video"
   ],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-update-videoplayer-page-to-display-a-large-html5-video-player-at-the-top-of-the-page-when-a-video-card-is-clicked",
-      "title": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
+      "id": "feature-implement-a-5-star-rating-system-on-the-video-player-page-that-allows-users-to-rate-videos-from-1-to-5-stars-styled-like-the-original-2005-youtube-star-rating-system",
+      "title": "Implement a 5-star rating system on the Video Player page that allows users to rate videos from 1 to 5 stars, styled like the original 2005 YouTube star rating system",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-display-video-title-in-bold-below-the-video-player",
-      "title": "Display video title in bold below the video player",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-subscribe-button-next-to-the-channel-name-below-the-video-player",
-      "title": "Add a Subscribe button next to the channel name below the video player",
+      "id": "feature-display-the-average-star-rating-and-total-number-of-ratings-for-each-video-on-the-video-player-page",
+      "title": "Display the average star rating and total number of ratings for each video on the Video Player page",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-an-expandable-description-box-below-the-video-metadata-that-can-be-collapsed-and-expanded",
-      "title": "Add an expandable description box below the video metadata that can be collapsed and expanded",
+      "id": "feature-add-a-view-counter-to-each-video-that-increments-every-time-the-video-player-page-is-loaded-for-that-specific-video",
+      "title": "Add a view counter to each video that increments every time the Video Player page is loaded for that specific video",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-a-comments-section-at-the-bottom-of-the-video-player-page-with-a-text-input-for-add-a-comment",
-      "title": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+      "id": "feature-add-a-share-button-on-the-video-player-page-that-copies-the-current-video-url-to-the-user-s-clipboard",
+      "title": "Add a 'Share' button on the Video Player page that copies the current video URL to the user's clipboard",
       "reqIds": [
         "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-display-a-list-of-related-videos-on-the-right-side-of-the-video-player-in-a-smaller-vertical-list-format",
-      "title": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
-      "reqIds": [
-        "REQ-6"
       ],
       "version": 1
     }
@@ -62,36 +48,33 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Video player page with navigation from homepage cards",
+      "summary": "5-star rating system for videos (YouTube 2005 style)",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Large HTML5 video player on video page",
+      "summary": "View counter that increments on page load",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Video metadata display: title (bold), channel name with Subscribe button, expandable description",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Comments section with 'Add a comment' input",
+      "summary": "Share button that copies video URL to clipboard",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-5",
-      "summary": "Related videos sidebar in vertical list format",
-      "reqIds": [],
+      "summary": "Store video ratings in the backend database, associating each rating with the specific video ID and user principal who submitted it",
+      "reqIds": [
+        "REQ-2"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "YouTube Clone",
+  "gameProjectType": "none",
+  "projectName": "MediaShare",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

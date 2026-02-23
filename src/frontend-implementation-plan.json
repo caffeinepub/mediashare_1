@@ -1,121 +1,108 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Create video player page with player, metadata, comments, and related videos",
+  "title": "Add 5-star rating system, view counter, and share functionality",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
+      "summary": "Implement a 5-star rating system on the Video Player page that allows users to rate videos from 1 to 5 stars, styled like the original 2005 YouTube star rating system",
       "acceptanceCriteria": [
-        "Video player is prominently displayed at the top of the page",
-        "Player uses HTML5 video element",
-        "Video plays when user clicks on a video card from the homepage"
+        "Display 5 clickable star icons on the VideoPlayer page",
+        "Clicking a star sets the rating for that video (1-5 stars)",
+        "Visual feedback shows which stars are selected",
+        "Style matches the classic 2005 YouTube aesthetic",
+        "Users can change their rating by clicking a different star"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Restructure the page layout to prominently display the HTML5 video player at the top. Use the blob-storage component's ExternalBlob.getDirectURL() method to obtain the streaming video URL for the HTML5 video element. Ensure proper video controls are enabled and the player is responsive. Verify the blob-storage component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Display video title in bold below the video player",
-      "acceptanceCriteria": [
-        "Video title is displayed below the player",
-        "Title text is bold",
-        "Title matches the video metadata"
-      ],
-      "file_operations": [
+          "path": "frontend/src/components/VideoRating.tsx",
+          "operation": "create",
+          "description": "Create a VideoRating component with 5 interactive star icons for rating videos. Implement hover effects showing which stars would be selected, handle click events to submit ratings, and display the user's current rating if one exists. Style the stars to match the 2005 YouTube aesthetic with gold/yellow coloring. Accept videoId as a prop and integrate with the useRateVideo and useGetUserRating hooks."
+        },
+        {
+          "path": "frontend/src/hooks/useRateVideo.ts",
+          "operation": "create",
+          "description": "Create a mutation hook that calls the backend rateVideo method with videoId and star rating (1-5). On success, invalidate video metadata queries and user rating queries. Handle authorization errors gracefully and show toast notifications for success/error states."
+        },
+        {
+          "path": "frontend/src/hooks/useGetUserRating.ts",
+          "operation": "create",
+          "description": "Create a query hook that fetches the current user's rating for a specific video from the backend getUserRatings method, filtering for the specified videoId. Return the rating value or null if no rating exists. Only fetch when user is authenticated."
+        },
         {
           "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Add a bold title display immediately below the video player element. Use the video metadata from the useVideo hook to populate the title. Apply appropriate styling (font-weight-bold or similar) to make the title visually prominent while maintaining the dark theme with red accents."
+          "description": "Import and integrate the VideoRating component into the VideoPlayer page. Position it below the video title and like button, creating a rating section that displays the interactive star rating interface. Ensure proper spacing and alignment with existing UI elements."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add a Subscribe button next to the channel name below the video player",
+      "summary": "Display the average star rating and total number of ratings for each video on the Video Player page",
       "acceptanceCriteria": [
-        "Subscribe button appears next to the channel name",
-        "Button is visually distinct and clickable",
-        "Backend tracks subscription relationships between users and channels",
-        "Button shows subscribed state if user is already subscribed"
+        "Show average rating as filled/half-filled stars",
+        "Display rating count (e.g., '4.2 stars (156 ratings)')",
+        "Update display when user submits a new rating"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
+          "path": "frontend/src/components/VideoRatingDisplay.tsx",
+          "operation": "create",
+          "description": "Create a VideoRatingDisplay component that shows the average rating as filled/half-filled star icons and displays the total rating count. Accept videoId as a prop and use useAverageRating and useTotalRatings hooks to fetch data. Render read-only stars with partial fill for decimal ratings (e.g., 4.2 stars shows 4 full stars and 1 half star). Display formatted text like '4.2 stars (156 ratings)'."
+        },
+        {
+          "path": "frontend/src/hooks/useAverageRating.ts",
+          "operation": "create",
+          "description": "Create a query hook that fetches the average rating for a specific video from the backend getAverageRating method. Return the numeric average (0-5) with proper error handling and loading states."
+        },
+        {
+          "path": "frontend/src/hooks/useTotalRatings.ts",
+          "operation": "create",
+          "description": "Create a query hook that fetches the total number of ratings for a specific video from the backend getTotalRatings method. Return the count as a number with proper error handling and loading states."
+        },
+        {
+          "path": "frontend/src/components/VideoRating.tsx",
           "operation": "modify",
-          "description": "Add a Subscribe button next to the ChannelNameDisplay component in the video metadata section. Implement click handler that calls a backend subscription method. Show loading state during subscription action. Display 'Subscribe' or 'Subscribed' text based on current subscription status. Use the authorization component to ensure the user is authenticated before allowing subscription. Style the button to be visually distinct with the red accent color when active."
-        },
-        {
-          "path": "frontend/src/hooks/useSubscribe.ts",
-          "operation": "create",
-          "description": "Create a React Query mutation hook for subscribing to channels. Call the backend capability to track subscription relationships. Invalidate subscription status queries on success. Handle authentication requirements using the authorization component. Show toast notifications for success and error states."
-        },
-        {
-          "path": "frontend/src/hooks/useSubscriptionStatus.ts",
-          "operation": "create",
-          "description": "Create a React Query hook to fetch the current user's subscription status for a given channel/uploader principal. Return a boolean indicating whether the user is subscribed. Enable the query only when both actor and principal are available."
+          "description": "Update VideoRating component to include the VideoRatingDisplay component above the interactive rating stars, creating a complete rating section that shows both the aggregate statistics and the user's personal rating interface."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Add an expandable description box below the video metadata that can be collapsed and expanded",
+      "summary": "Add a view counter to each video that increments every time the Video Player page is loaded for that specific video",
       "acceptanceCriteria": [
-        "Description box is initially collapsed or truncated",
-        "User can click to expand the full description",
-        "User can collapse the description after expanding",
-        "Description content matches video metadata"
+        "View count increments when VideoPlayer page loads",
+        "Backend persists view count for each video",
+        "View count displays on the Video Player page using existing formatNumber utility",
+        "Multiple page loads by the same user count as separate views"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Add an expandable description section below the video metadata (title, channel, subscribe button). Initially show only the first 2-3 lines of the description with a 'Show more' button. When clicked, expand to show the full description and change the button to 'Show less'. Use React state to track the expanded/collapsed state. Apply proper text overflow handling for the collapsed state."
+          "description": "Ensure the existing useIncrementVideoView hook is called when the VideoPlayer component mounts with the current videoId. Verify the view count is displayed using the formatNumber utility from frontend/src/utils/formatters.ts. The view count should already be part of the video metadata; ensure it's prominently displayed near the video title."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+      "summary": "Add a 'Share' button on the Video Player page that copies the current video URL to the user's clipboard",
       "acceptanceCriteria": [
-        "Comments section is positioned at the bottom of the page",
-        "Text input field is labeled 'Add a comment'",
-        "Existing comments are displayed above the input",
-        "New comments appear after submission"
+        "Share button is visible on the VideoPlayer page",
+        "Clicking the button copies the full video URL to clipboard",
+        "Show a toast notification confirming successful copy",
+        "Button works on all modern browsers that support clipboard API"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Position the existing CommentSection component at the bottom of the page layout, below the video player and description. Ensure the component receives the videoId prop and is properly integrated into the page structure. The CommentSection component already handles the 'Add a comment' input and comment display functionality."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
-      "acceptanceCriteria": [
-        "Related videos list appears on the right side of the player",
-        "Videos are displayed in a vertical list format",
-        "Video cards are smaller than the main homepage grid cards",
-        "Clicking a related video navigates to that video's player page",
-        "List shows at least 5-10 related videos"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Restructure the page layout to use a two-column layout with the main video player and metadata on the left, and a related videos sidebar on the right. Implement simple related videos logic (e.g., same uploader or recent videos from all uploads). Render VideoCard components in a vertical list format with reduced sizing. Ensure clicking a related video navigates to that video's player page using TanStack Router navigation. Make the layout responsive so related videos move below the main content on mobile."
+          "path": "frontend/src/components/ShareButton.tsx",
+          "operation": "create",
+          "description": "Create a ShareButton component that displays a share icon button. On click, use navigator.clipboard.writeText() to copy the current window.location.href to the clipboard. Show a toast notification on success ('Link copied to clipboard!') and handle errors gracefully with fallback error messages. Style the button to match the YouTube-style dark theme."
         },
         {
-          "path": "frontend/src/components/VideoCard.tsx",
+          "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Add an optional 'compact' or 'small' variant prop to VideoCard component that renders a smaller, horizontal layout suitable for the related videos sidebar. Adjust thumbnail size, title truncation, and metadata display to fit the compact format while maintaining readability."
+          "description": "Import and add the ShareButton component to the VideoPlayer page. Position it in the action bar alongside the like button and subscribe button, creating a cohesive row of video interaction controls. Ensure proper spacing and alignment with existing UI elements."
         }
       ]
     }

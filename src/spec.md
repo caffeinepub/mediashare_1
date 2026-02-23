@@ -1,14 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Create a comprehensive video player page with player, metadata, comments, and related videos.
+**Goal:** Add interactive rating system, view tracking, and share functionality to the video player.
 
 **Planned changes:**
-- Add large HTML5 video player at the top of the VideoPlayer page
-- Display video title in bold below the player
-- Add Subscribe button next to channel name
-- Add expandable/collapsible description box below video metadata
-- Add Comments Section at the bottom with text input for adding comments
-- Display Related Videos list on the right side in vertical format
+- Implement a 5-star rating system on the Video Player page styled like the original 2005 YouTube
+- Store video ratings in the backend database associated with video ID and user
+- Display average star rating and total number of ratings for each video
+- Add a view counter that increments every time the Video Player page is loaded
+- Add a 'Share' button that copies the current video URL to the clipboard
 
-**User-visible outcome:** Users can click a video card to navigate to a full video player page where they can watch the video, read and expand the description, subscribe to the channel, read and post comments, and discover related videos in a sidebar.
+**User-visible outcome:** Users can rate videos with 1-5 stars, see how many times videos have been viewed, see average ratings from all users, and easily share video links by clicking a share button.
