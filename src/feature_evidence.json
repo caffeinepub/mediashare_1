@@ -2,84 +2,18 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-download-button-to-video-player-page-that-allows-users-to-download-the-video-file-they-are-currently-viewing",
-      "featureTitle": "Add download button to video player page that allows users to download the video file they are currently viewing",
+      "featureId": "feature-validate-that-frontend-imports-and-actor-integration-code-correctly-reference-the-deployed-backend-canister",
+      "featureTitle": "Validate that frontend imports and actor integration code correctly reference the deployed backend canister",
       "files": [
-        "frontend/src/pages/VideoPlayer.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-16"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-like-functionality-for-videos-that-allows-users-to-like-videos-and-displays-the-total-like-count",
-      "featureTitle": "Implement like functionality for videos that allows users to like videos and displays the total like count",
-      "files": [
-        "frontend/src/components/VideoCard.tsx",
-        "frontend/src/hooks/useVideoLike.ts",
-        "frontend/src/pages/VideoPlayer.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-17"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-comment-system-for-videos-that-allows-users-to-post-comments-and-view-all-comments-on-a-video",
-      "featureTitle": "Add comment system for videos that allows users to post comments and view all comments on a video",
-      "files": [
-        "frontend/src/components/CommentSection.tsx",
-        "frontend/src/hooks/useAddComment.ts",
-        "frontend/src/hooks/useComments.ts",
-        "frontend/src/pages/VideoPlayer.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-18"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-allow-users-to-set-and-edit-a-custom-channel-name-instead-of-displaying-their-principal-with-support-for-shorter-custom-names",
-      "featureTitle": "Allow users to set and edit a custom channel name instead of displaying their principal, with support for shorter custom names",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/ChannelNameDisplay.tsx",
-        "frontend/src/components/Layout.tsx",
         "frontend/src/components/PhotoCard.tsx",
-        "frontend/src/components/ProfileSetupModal.tsx",
         "frontend/src/components/VideoCard.tsx",
-        "frontend/src/hooks/useChannelName.ts",
-        "frontend/src/hooks/useSetChannelName.ts",
+        "frontend/src/hooks/usePhoto.ts",
+        "frontend/src/hooks/usePhotoUpload.ts",
+        "frontend/src/hooks/usePhotos.ts",
+        "frontend/src/hooks/useVideo.ts",
+        "frontend/src/hooks/useVideoUpload.ts",
+        "frontend/src/hooks/useVideos.ts",
         "frontend/src/pages/PhotoViewer.tsx",
-        "frontend/src/pages/Settings.tsx",
         "frontend/src/pages/VideoPlayer.tsx"
       ],
       "components": [
@@ -92,28 +26,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-19"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-video-quality-selector-to-video-player-that-allows-users-to-choose-playback-quality-for-online-viewing",
-      "featureTitle": "Add video quality selector to video player that allows users to choose playback quality for online viewing",
-      "files": [
-        "frontend/src/components/VideoQualitySelector.tsx",
-        "frontend/src/pages/VideoPlayer.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-20"
+        "REQ-4"
       ],
       "confidence": "high"
     }

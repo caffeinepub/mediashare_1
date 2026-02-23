@@ -4,17 +4,20 @@ import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from '../hooks/useGetCallerUserProfile';
 import { useSaveCallerUserProfile } from '../hooks/useSaveCallerUserProfile';
 import { useSetChannelName } from '../hooks/useSetChannelName';
+import { useGetUserSubscriptionStatus } from '../hooks/useGetUserSubscriptionStatus';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, Settings as SettingsIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, ArrowLeft, Settings as SettingsIcon, Crown, Zap } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function Settings() {
   const navigate = useNavigate();
   const { identity } = useInternetIdentity();
   const { data: userProfile, isLoading: profileLoading } = useGetCallerUserProfile();
+  const { data: subscriptionStatus, isLoading: subscriptionLoading } = useGetUserSubscriptionStatus();
   const saveProfileMutation = useSaveCallerUserProfile();
   const setChannelNameMutation = useSetChannelName();
 
@@ -22,6 +25,7 @@ export function Settings() {
   const [channelName, setChannelName] = useState('');
 
   const isAuthenticated = !!identity;
+  const isPremium = subscriptionStatus?.tier === 'premium';
 
   useEffect(() => {
     if (userProfile) {
@@ -62,6 +66,7 @@ export function Settings() {
     await saveProfileMutation.mutateAsync({
       name: name.trim(),
       channelName: channelName.trim() || undefined,
+      accountCreation: userProfile?.accountCreation || BigInt(Date.now() * 1000000),
     });
   };
 
@@ -90,6 +95,59 @@ export function Settings() {
             <p className="text-muted-foreground">Manage your profile and preferences</p>
           </div>
         </div>
+
+        {/* Subscription Status Card */}
+        <Card className={isPremium ? 'border-chart-1 bg-gradient-to-br from-chart-1/5 to-chart-2/5' : ''}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                Subscription
+                {isPremium && <Crown className="w-5 h-5 text-chart-1" />}
+              </CardTitle>
+              {isPremium ? (
+                <Badge className="bg-chart-1 text-white">Premium</Badge>
+              ) : (
+                <Badge variant="outline">Free</Badge>
+              )}
+            </div>
+            <CardDescription>
+              {isPremium
+                ? 'You have access to all premium features'
+                : 'Upgrade to unlock unlimited uploads and more'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {subscriptionLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading subscription status...
+              </div>
+            ) : isPremium ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="w-4 h-4 text-chart-1" />
+                  <span>Unlimited uploads</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="w-4 h-4 text-chart-1" />
+                  <span>4K quality support</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="w-4 h-4 text-chart-1" />
+                  <span>Priority support</span>
+                </div>
+              </div>
+            ) : (
+              <Button
+                onClick={() => navigate({ to: '/upgrade' })}
+                className="w-full bg-gradient-to-r from-chart-1 to-chart-2 hover:opacity-90"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade to Premium
+              </Button>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { ExternalBlob } from '../backend';
+import { toast } from 'sonner';
 
 export function useVideoUpload() {
   const { actor } = useActor();
@@ -9,24 +9,42 @@ export function useVideoUpload() {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const mutation = useMutation({
-    mutationFn: async ({ title, description, file }: { title: string; description: string; file: File }) => {
-      if (!actor) throw new Error('Not authenticated');
+    mutationFn: async ({
+      file,
+      title,
+      description,
+      onProgress,
+    }: {
+      file: File;
+      title: string;
+      description: string;
+      onProgress?: (progress: number) => void;
+    }) => {
+      if (!actor) throw new Error('Actor not initialized');
 
+      // Convert File to Uint8Array
       const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
-      
-      const externalBlob = ExternalBlob.fromBytes(uint8Array).withUploadProgress((percentage) => {
-        setUploadProgress(percentage);
-      });
 
-      const videoId = await actor.uploadVideo(title, description, externalBlob);
+      // Update progress
+      setUploadProgress(50);
+      if (onProgress) onProgress(50);
+
+      const videoId = await actor.uploadVideo(title, description, uint8Array);
+
+      setUploadProgress(100);
+      if (onProgress) onProgress(100);
+
       return videoId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
+      toast.success('Video uploaded successfully!');
       setUploadProgress(0);
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Video upload error:', error);
+      toast.error(`Failed to upload video: ${error.message}`);
       setUploadProgress(0);
     },
   });

@@ -16,10 +16,9 @@ export interface Comment {
   'author' : Principal,
   'timestamp' : Time,
 }
-export type ExternalBlob = Uint8Array;
 export interface Photo {
   'title' : string,
-  'file' : ExternalBlob,
+  'file' : Uint8Array,
   'description' : string,
   'uploader' : Principal,
   'uploadTime' : Time,
@@ -32,14 +31,23 @@ export interface PhotoMetadata {
   'uploadTime' : Time,
 }
 export type Time = bigint;
-export interface UserProfile { 'channelName' : [] | [string], 'name' : string }
+export interface UserProfile {
+  'channelName' : [] | [string],
+  'name' : string,
+  'accountCreation' : Time,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface UserStats {
+  'totalVideosUploaded' : bigint,
+  'accountCreation' : Time,
+  'totalPhotosUploaded' : bigint,
+}
 export interface Video {
   'title' : string,
   'likeCount' : bigint,
-  'file' : ExternalBlob,
+  'file' : Uint8Array,
   'description' : string,
   'commentCount' : bigint,
   'uploader' : Principal,
@@ -101,6 +109,7 @@ export interface _SERVICE {
   'getComments' : ActorMethod<[string], Array<Comment>>,
   'getPhoto' : ActorMethod<[string], Photo>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getUserStats' : ActorMethod<[Principal], UserStats>,
   'getVideo' : ActorMethod<[string], Video>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'likeVideo' : ActorMethod<[string], undefined>,
@@ -112,8 +121,8 @@ export interface _SERVICE {
   'updateComment' : ActorMethod<[string, bigint, string], undefined>,
   'updatePhoto' : ActorMethod<[string, string, string], undefined>,
   'updateVideo' : ActorMethod<[string, string, string], undefined>,
-  'uploadPhoto' : ActorMethod<[string, string, ExternalBlob], string>,
-  'uploadVideo' : ActorMethod<[string, string, ExternalBlob], string>,
+  'uploadPhoto' : ActorMethod<[string, string, Uint8Array], string>,
+  'uploadVideo' : ActorMethod<[string, string, Uint8Array], string>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

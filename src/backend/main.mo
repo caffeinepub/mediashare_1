@@ -5,13 +5,13 @@ import Runtime "mo:core/Runtime";
 import Iter "mo:core/Iter";
 import Text "mo:core/Text";
 import Set "mo:core/Set";
-import MixinStorage "blob-storage/Mixin";
-import Storage "blob-storage/Storage";
+import List "mo:core/List";
 import Nat "mo:core/Nat";
 import Migration "migration";
+import MixinStorage "blob-storage/Mixin";
+import Storage "blob-storage/Storage";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
-import List "mo:core/List";
 
 (with migration = Migration.run)
 actor {
@@ -44,7 +44,7 @@ actor {
     description : Text;
     uploader : Principal;
     uploadTime : Time.Time;
-    file : Storage.ExternalBlob;
+    file : Blob;
     likeCount : Nat;
     commentCount : Nat;
   };
@@ -54,10 +54,10 @@ actor {
     description : Text;
     uploader : Principal;
     uploadTime : Time.Time;
-    file : Storage.ExternalBlob;
+    file : Blob;
   };
 
-  type Comment = {
+  public type Comment = {
     id : Nat;
     author : Principal;
     content : Text;
@@ -72,6 +72,13 @@ actor {
   public type UserProfile = {
     name : Text;
     channelName : ?Text;
+    accountCreation : Time.Time;
+  };
+
+  public type UserStats = {
+    totalVideosUploaded : Nat;
+    totalPhotosUploaded : Nat;
+    accountCreation : Time.Time;
   };
 
   let videos = Map.empty<Text, Video>();
@@ -90,27 +97,26 @@ actor {
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    // Anyone can view profiles, but only admins can view other users' full profiles
-    // Regular users can only view their own profile details
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      // Return limited profile info for other users
-      switch (userProfiles.get(user)) {
-        case (null) { null };
-        case (?profile) { ?{ name = profile.name; channelName = profile.channelName } };
-      };
-    } else {
-      userProfiles.get(user);
-    };
+    // Anyone can view user profiles (public information on video platforms)
+    userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
-    userProfiles.add(caller, profile);
+
+    let existingProfile = userProfiles.get(caller);
+    let accountCreation = switch (existingProfile) {
+      case (null) { Time.now() };
+      case (?existing) { existing.accountCreation };
+    };
+
+    let newProfile = { profile with accountCreation };
+    userProfiles.add(caller, newProfile);
   };
 
-  public shared ({ caller }) func uploadVideo(title : Text, description : Text, file : Storage.ExternalBlob) : async Text {
+  public shared ({ caller }) func uploadVideo(title : Text, description : Text, file : Blob) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can upload videos");
     };
@@ -128,7 +134,7 @@ actor {
     videoId;
   };
 
-  public shared ({ caller }) func uploadPhoto(title : Text, description : Text, file : Storage.ExternalBlob) : async Text {
+  public shared ({ caller }) func uploadPhoto(title : Text, description : Text, file : Blob) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can upload photos");
     };
@@ -442,6 +448,23 @@ actor {
           };
         };
       };
+    };
+  };
+
+  public query ({ caller }) func getUserStats(user : Principal) : async UserStats {
+    // Anyone can view user statistics (public information on video platforms)
+    let profile = switch (userProfiles.get(user)) {
+      case (null) { Runtime.trap("User not found") };
+      case (?p) { p };
+    };
+
+    let totalVideos = videos.values().filter(func(v) { v.uploader == user }).size();
+    let totalPhotos = photos.values().filter(func(p) { p.uploader == user }).size();
+
+    {
+      totalVideosUploaded = totalVideos;
+      totalPhotosUploaded = totalPhotos;
+      accountCreation = profile.accountCreation;
     };
   };
 };

@@ -37,6 +37,7 @@ export function ProfileSetupModal() {
     await saveProfileMutation.mutateAsync({
       name: name.trim(),
       channelName: channelName.trim() || undefined,
+      accountCreation: BigInt(Date.now() * 1000000), // Convert to nanoseconds
     });
     setOpen(false);
   };

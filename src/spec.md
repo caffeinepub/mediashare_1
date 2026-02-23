@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Add video download, like, comment, channel naming, and quality selection features to the MediaShare platform.
+**Goal:** Fix deployment error and ensure the application successfully deploys to the Internet Computer network.
 
 **Planned changes:**
-- Add download button to video player page for downloading videos
-- Implement like functionality with like button and count display on videos
-- Add comment system below video player for posting and viewing comments
-- Allow users to set and edit custom channel names instead of displaying principals
-- Add video quality selector to video player for choosing playback quality
+- Diagnose and resolve deployment failure when pushing code to the network
+- Fix backend migration logic to handle upgrades without data loss
+- Ensure all backend actor methods have proper type signatures matching the candid interface
+- Validate frontend actor integration code correctly references the deployed backend canister
 
-**User-visible outcome:** Users can download videos, like/unlike videos with visible counts, post and read comments on videos, set custom channel names that display throughout the platform, and select video quality during playback.
+**User-visible outcome:** The application deploys successfully to the Internet Computer network with all existing data preserved, and users can interact with the platform without deployment-related errors.

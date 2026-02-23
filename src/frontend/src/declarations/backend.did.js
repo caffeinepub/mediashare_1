@@ -28,6 +28,7 @@ export const UserRole = IDL.Variant({
 export const UserProfile = IDL.Record({
   'channelName' : IDL.Opt(IDL.Text),
   'name' : IDL.Text,
+  'accountCreation' : Time,
 });
 export const Comment = IDL.Record({
   'id' : IDL.Nat,
@@ -35,18 +36,22 @@ export const Comment = IDL.Record({
   'author' : IDL.Principal,
   'timestamp' : Time,
 });
-export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const Photo = IDL.Record({
   'title' : IDL.Text,
-  'file' : ExternalBlob,
+  'file' : IDL.Vec(IDL.Nat8),
   'description' : IDL.Text,
   'uploader' : IDL.Principal,
   'uploadTime' : Time,
 });
+export const UserStats = IDL.Record({
+  'totalVideosUploaded' : IDL.Nat,
+  'accountCreation' : Time,
+  'totalPhotosUploaded' : IDL.Nat,
+});
 export const Video = IDL.Record({
   'title' : IDL.Text,
   'likeCount' : IDL.Nat,
-  'file' : ExternalBlob,
+  'file' : IDL.Vec(IDL.Nat8),
   'description' : IDL.Text,
   'commentCount' : IDL.Nat,
   'uploader' : IDL.Principal,
@@ -123,6 +128,7 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'getUserStats' : IDL.Func([IDL.Principal], [UserStats], ['query']),
   'getVideo' : IDL.Func([IDL.Text], [Video], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'likeVideo' : IDL.Func([IDL.Text], [], []),
@@ -134,8 +140,16 @@ export const idlService = IDL.Service({
   'updateComment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [], []),
   'updatePhoto' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'updateVideo' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
-  'uploadPhoto' : IDL.Func([IDL.Text, IDL.Text, ExternalBlob], [IDL.Text], []),
-  'uploadVideo' : IDL.Func([IDL.Text, IDL.Text, ExternalBlob], [IDL.Text], []),
+  'uploadPhoto' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
+      [IDL.Text],
+      [],
+    ),
+  'uploadVideo' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
+      [IDL.Text],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -161,6 +175,7 @@ export const idlFactory = ({ IDL }) => {
   const UserProfile = IDL.Record({
     'channelName' : IDL.Opt(IDL.Text),
     'name' : IDL.Text,
+    'accountCreation' : Time,
   });
   const Comment = IDL.Record({
     'id' : IDL.Nat,
@@ -168,18 +183,22 @@ export const idlFactory = ({ IDL }) => {
     'author' : IDL.Principal,
     'timestamp' : Time,
   });
-  const ExternalBlob = IDL.Vec(IDL.Nat8);
   const Photo = IDL.Record({
     'title' : IDL.Text,
-    'file' : ExternalBlob,
+    'file' : IDL.Vec(IDL.Nat8),
     'description' : IDL.Text,
     'uploader' : IDL.Principal,
     'uploadTime' : Time,
   });
+  const UserStats = IDL.Record({
+    'totalVideosUploaded' : IDL.Nat,
+    'accountCreation' : Time,
+    'totalPhotosUploaded' : IDL.Nat,
+  });
   const Video = IDL.Record({
     'title' : IDL.Text,
     'likeCount' : IDL.Nat,
-    'file' : ExternalBlob,
+    'file' : IDL.Vec(IDL.Nat8),
     'description' : IDL.Text,
     'commentCount' : IDL.Nat,
     'uploader' : IDL.Principal,
@@ -256,6 +275,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'getUserStats' : IDL.Func([IDL.Principal], [UserStats], ['query']),
     'getVideo' : IDL.Func([IDL.Text], [Video], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'likeVideo' : IDL.Func([IDL.Text], [], []),
@@ -268,12 +288,12 @@ export const idlFactory = ({ IDL }) => {
     'updatePhoto' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'updateVideo' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'uploadPhoto' : IDL.Func(
-        [IDL.Text, IDL.Text, ExternalBlob],
+        [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
         [IDL.Text],
         [],
       ),
     'uploadVideo' : IDL.Func(
-        [IDL.Text, IDL.Text, ExternalBlob],
+        [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
         [IDL.Text],
         [],
       ),

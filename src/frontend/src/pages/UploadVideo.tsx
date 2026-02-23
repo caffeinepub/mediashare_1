@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useVideoUpload } from '../hooks/useVideoUpload';
+import { UpgradePrompt } from '../components/UpgradePrompt';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,6 +41,9 @@ export function UploadVideo() {
         <Alert>
           <AlertDescription>Please sign in to upload videos.</AlertDescription>
         </Alert>
+        <Button onClick={() => navigate({ to: '/' })} className="mt-4">
+          Back to Home
+        </Button>
       </div>
     );
   }
@@ -47,16 +51,33 @@ export function UploadVideo() {
   if (isSuccess) {
     return (
       <div className="container py-16 max-w-2xl mx-auto">
-        <Card>
-          <CardContent className="pt-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
+        <Card className="border-green-500/50 bg-green-500/5">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <CardTitle>Upload Successful!</CardTitle>
+                <CardDescription>Your video has been uploaded successfully.</CardDescription>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold">Video Uploaded Successfully!</h2>
-            <p className="text-muted-foreground">Your video has been uploaded and is now available in the gallery.</p>
-            <div className="flex gap-4 justify-center pt-4">
-              <Button onClick={() => navigate({ to: '/videos' })}>View Gallery</Button>
-              <Button variant="outline" onClick={() => window.location.reload()}>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-3">
+              <Button onClick={() => navigate({ to: '/videos' })} className="flex-1">
+                View All Videos
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTitle('');
+                  setDescription('');
+                  setFile(null);
+                  window.location.reload();
+                }}
+                className="flex-1"
+              >
                 Upload Another
               </Button>
             </div>
@@ -67,97 +88,112 @@ export function UploadVideo() {
   }
 
   return (
-    <div className="container py-8 max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
-          <Video className="w-8 h-8 text-chart-1" />
-          Upload Video
-        </h1>
-        <p className="text-muted-foreground">Share your video with the community</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Video Details</CardTitle>
-          <CardDescription>Fill in the information about your video</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="video-file">Video File *</Label>
-              <div className="flex items-center gap-4">
-                <Input
-                  id="video-file"
-                  type="file"
-                  accept="video/*"
-                  onChange={handleFileChange}
-                  disabled={isUploading}
-                  required
-                />
-              </div>
-              {file && (
-                <p className="text-sm text-muted-foreground">
-                  Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter video title"
-                disabled={isUploading}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter video description (optional)"
-                rows={4}
-                disabled={isUploading}
-              />
-            </div>
-
-            {isUploading && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Uploading...</span>
-                  <span className="font-medium">{uploadProgress}%</span>
+    <div className="container py-8 max-w-4xl mx-auto">
+      <div className="grid md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
+                  <Video className="w-6 h-6 text-white" />
                 </div>
-                <Progress value={uploadProgress} />
+                <div>
+                  <CardTitle>Upload Video</CardTitle>
+                  <CardDescription>Share your video with the world</CardDescription>
+                </div>
               </div>
-            )}
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="video-file">Video File *</Label>
+                  <Input
+                    id="video-file"
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                    required
+                  />
+                  {file && (
+                    <p className="text-sm text-muted-foreground">
+                      Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                </div>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    placeholder="Enter video title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    disabled={isUploading}
+                    required
+                  />
+                </div>
 
-            <Button type="submit" disabled={isUploading || !file || !title.trim()} className="w-full gap-2">
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Uploading... {uploadProgress}%
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Upload Video
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Enter video description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={isUploading}
+                    rows={4}
+                  />
+                </div>
+
+                {isUploading && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Uploading...</span>
+                      <span className="font-medium">{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2" />
+                  </div>
+                )}
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex gap-3">
+                  <Button type="submit" disabled={!file || !title.trim() || isUploading} className="flex-1">
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Video
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate({ to: '/videos' })}
+                    disabled={isUploading}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="md:col-span-1">
+          <UpgradePrompt />
+        </div>
+      </div>
     </div>
   );
 }

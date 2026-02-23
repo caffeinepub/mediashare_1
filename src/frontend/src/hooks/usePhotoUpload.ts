@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { ExternalBlob } from '../backend';
+import { toast } from 'sonner';
 
 export function usePhotoUpload() {
   const { actor } = useActor();
@@ -9,24 +9,42 @@ export function usePhotoUpload() {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const mutation = useMutation({
-    mutationFn: async ({ title, description, file }: { title: string; description: string; file: File }) => {
-      if (!actor) throw new Error('Not authenticated');
+    mutationFn: async ({
+      file,
+      title,
+      description,
+      onProgress,
+    }: {
+      file: File;
+      title: string;
+      description: string;
+      onProgress?: (progress: number) => void;
+    }) => {
+      if (!actor) throw new Error('Actor not initialized');
 
+      // Convert File to Uint8Array
       const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
-      
-      const externalBlob = ExternalBlob.fromBytes(uint8Array).withUploadProgress((percentage) => {
-        setUploadProgress(percentage);
-      });
 
-      const photoId = await actor.uploadPhoto(title, description, externalBlob);
+      // Update progress
+      setUploadProgress(50);
+      if (onProgress) onProgress(50);
+
+      const photoId = await actor.uploadPhoto(title, description, uint8Array);
+
+      setUploadProgress(100);
+      if (onProgress) onProgress(100);
+
       return photoId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['photos'] });
+      toast.success('Photo uploaded successfully!');
       setUploadProgress(0);
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Photo upload error:', error);
+      toast.error(`Failed to upload photo: ${error.message}`);
       setUploadProgress(0);
     },
   });

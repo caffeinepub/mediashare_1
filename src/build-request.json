@@ -1,118 +1,81 @@
 {
   "kind": "build_request",
-  "title": "Add video download, like, comment, channel naming, and quality selection features",
-  "projectName": "MediaShare",
-  "priority": "normal",
+  "title": "Fix deployment error",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-16",
-      "text": "Add download button to video player page that allows users to download the video file they are currently viewing",
+      "id": "REQ-1",
+      "text": "Diagnose and resolve the deployment failure that occurred when pushing code to the network",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-deployment-error"
+        ],
+        "quotes": [
+          "Deployment unsuccessful"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The application successfully deploys to the Internet Computer network",
+        "All canisters initialize without errors",
+        "The deployment completes without throwing errors"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Verify backend migration logic properly handles the upgrade from existing state to new state without data loss",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-deployment-error"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Migration module correctly transforms old state to new state",
+        "All existing user data, videos, photos, playlists, and comments are preserved during upgrade",
+        "No runtime errors occur during canister upgrade process"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Ensure all backend actor methods have proper type signatures and return values matching the candid interface",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-deployment-error"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All public methods in main.mo match the expected candid interface",
+        "No type mismatches between Motoko implementation and candid definitions",
+        "Backend compiles without warnings or errors"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Validate that frontend imports and actor integration code correctly reference the deployed backend canister",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "Video ko download karne ka option"
+          "msg-deployment-error"
         ]
       },
       "acceptanceCriteria": [
-        "Download button is visible on the video player page",
-        "Clicking the download button triggers a file download of the video",
-        "Downloaded video maintains original filename and format"
-      ]
-    },
-    {
-      "id": "REQ-17",
-      "text": "Implement like functionality for videos that allows users to like videos and displays the total like count",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "video ko like karne ka option"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Like button is visible on video player page and video cards",
-        "Users can click to like/unlike a video",
-        "Like count is displayed next to the like button",
-        "Like state persists across page refreshes",
-        "Backend stores like data associated with each video and user"
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "text": "Add comment system for videos that allows users to post comments and view all comments on a video",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "comment karne ka option"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Comment section is visible below video player",
-        "Users can write and submit new comments",
-        "All comments for a video are displayed in chronological order",
-        "Each comment shows the commenter's principal and timestamp",
-        "Backend stores comments with video ID, user principal, text, and timestamp"
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "text": "Allow users to set and edit a custom channel name instead of displaying their principal, with support for shorter custom names",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "channel name Hai Isko Is Tarah bnao Ki Ham Chhota Naam Rakh sake"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Users can set a custom channel name in their profile or settings",
-        "Channel name is displayed instead of principal on video cards, photo cards, and player pages",
-        "Users can edit their channel name at any time",
-        "Backend stores channel name associated with user principal",
-        "Channel name has a maximum character limit for shorter names"
-      ]
-    },
-    {
-      "id": "REQ-20",
-      "text": "Add video quality selector to video player that allows users to choose playback quality for online viewing",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "video quality ka Ham video quality ko select kar Saken online"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Quality selector control is visible in video player interface",
-        "Users can select from available quality options (e.g., 360p, 480p, 720p, 1080p)",
-        "Video playback adjusts to selected quality",
-        "Selected quality preference is maintained during playback session"
+        "Frontend successfully connects to the backend actor after deployment",
+        "All API calls from hooks properly resolve to backend methods",
+        "No console errors related to actor initialization or canister communication"
       ]
     }
   ],
   "constraints": [
-    "Maintain single-actor backend architecture in backend/main.mo",
-    "Do not modify immutable frontend paths: useInternetIdentity.ts, useInternetIdentity.tsx, useActor.ts, main.tsx, and components/ui directory",
-    "Use only React, Tailwind CSS, Shadcn components, and React Query for frontend implementation",
-    "All backend logic must be implemented in Motoko"
+    "Must preserve all existing user data during migration",
+    "Must maintain compatibility with Internet Identity authentication",
+    "Must not modify immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui"
   ],
   "nonGoals": [
-    "Multi-resolution video transcoding or server-side quality conversion",
-    "Real-time notifications for likes or comments",
-    "Comment moderation or reporting features",
-    "Channel customization beyond name (avatars, banners, descriptions)"
+    "Adding new features or functionality",
+    "Refactoring existing working code",
+    "Changing the UI design or styling"
   ],
   "imageRequirements": {
     "required": [],

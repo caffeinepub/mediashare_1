@@ -1,172 +1,92 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add video download, like, comment, channel naming, and quality selection features",
+  "title": "Fix Deployment Error - Frontend Implementation",
   "requirements": [
     {
-      "id": "REQ-16",
-      "summary": "Add download button to video player page that allows users to download the video file they are currently viewing",
+      "id": "REQ-1",
+      "summary": "Diagnose and resolve deployment failure - Frontend aspects",
       "acceptanceCriteria": [
-        "Download button is visible on the video player page",
-        "Clicking the download button triggers a file download of the video",
-        "Downloaded video maintains original filename and format"
+        "The application successfully deploys to the Internet Computer network",
+        "All canisters initialize without errors",
+        "The deployment completes without throwing errors"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
+          "path": "frontend/src/hooks/useActor.ts",
           "operation": "modify",
-          "description": "Add download button that uses the ExternalBlob.getDirectURL() method to create a download link for the current video. The button should be positioned near the video controls and trigger a download using an anchor element with the download attribute set to the video title as filename."
+          "description": "Review and verify actor initialization code handles canister ID resolution correctly post-deployment. Ensure the actor creation logic properly references the deployed backend canister and handles any network-specific configuration. Check that error handling during actor initialization is comprehensive and logs meaningful diagnostic information."
+        },
+        {
+          "path": "frontend/src/main.tsx",
+          "operation": "modify",
+          "description": "Verify that the application entry point correctly initializes all required providers (React Query, Internet Identity) and that there are no configuration issues preventing successful deployment. Ensure environment-specific settings are properly configured for network deployment."
         }
       ]
     },
     {
-      "id": "REQ-17",
-      "summary": "Implement like functionality for videos that allows users to like videos and displays the total like count",
+      "id": "REQ-4",
+      "summary": "Validate frontend imports and actor integration reference deployed backend correctly",
       "acceptanceCriteria": [
-        "Like button is visible on video player page and video cards",
-        "Users can click to like/unlike a video",
-        "Like count is displayed next to the like button",
-        "Like state persists across page refreshes",
-        "Backend stores like data associated with each video and user"
+        "Frontend successfully connects to the backend actor after deployment",
+        "All API calls from hooks properly resolve to backend methods",
+        "No console errors related to actor initialization or canister communication"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useVideoLike.ts",
-          "operation": "create",
-          "description": "Create React mutation hook for liking videos that calls the backend likeVideo method and invalidates both the videos list and individual video queries to refresh like counts. Include error handling for unauthorized users."
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Verify that all type definitions in the backend interface match the actual Candid interface exported by the deployed backend canister. Ensure that all method signatures, parameter types, and return types are correctly defined. Check that ExternalBlob types from blob-storage component are properly integrated where video and photo file fields are used."
+        },
+        {
+          "path": "frontend/src/hooks/useVideoUpload.ts",
+          "operation": "modify",
+          "description": "Verify that the video upload hook correctly converts Files to ExternalBlob using the blob-storage component and that the uploadVideo backend method call passes the correct ExternalBlob representation. Verify the component's usage instructions before implementing. Ensure error handling captures any type mismatches or serialization issues during upload."
+        },
+        {
+          "path": "frontend/src/hooks/usePhotoUpload.ts",
+          "operation": "modify",
+          "description": "Verify that the photo upload hook correctly converts Files to ExternalBlob using the blob-storage component and that the uploadPhoto backend method call passes the correct ExternalBlob representation. Verify the component's usage instructions before implementing. Ensure error handling captures any type mismatches or serialization issues during upload."
+        },
+        {
+          "path": "frontend/src/hooks/useVideo.ts",
+          "operation": "modify",
+          "description": "Verify that the video fetch hook correctly handles ExternalBlob data returned from the backend. Ensure that the Video type's file field is properly deserialized and can be used with the blob-storage component's getDirectURL() or getBytes() methods for display. Add error handling for any data format inconsistencies."
+        },
+        {
+          "path": "frontend/src/hooks/usePhoto.ts",
+          "operation": "modify",
+          "description": "Verify that the photo fetch hook correctly handles ExternalBlob data returned from the backend. Ensure that the Photo type's file field is properly deserialized and can be used with the blob-storage component's getDirectURL() or getBytes() methods for display. Add error handling for any data format inconsistencies."
         },
         {
           "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Add like button with heart icon that displays the current like count from video.likeCount. Integrate the useVideoLike hook to handle like actions. Show authentication prompt if user is not logged in. Position the like button prominently near the video metadata."
-        },
-        {
-          "path": "frontend/src/components/VideoCard.tsx",
-          "operation": "modify",
-          "description": "Add like count display showing video.likeCount with a heart icon at the bottom of each video card. Make the display read-only on cards (clicking the card navigates to the player where users can like)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "summary": "Add comment system for videos that allows users to post comments and view all comments on a video",
-      "acceptanceCriteria": [
-        "Comment section is visible below video player",
-        "Users can write and submit new comments",
-        "All comments for a video are displayed in chronological order",
-        "Each comment shows the commenter's principal and timestamp",
-        "Backend stores comments with video ID, user principal, text, and timestamp"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useComments.ts",
-          "operation": "create",
-          "description": "Create React Query hook that fetches comments for a specific video ID using the backend getComments method. Return an array of comments with loading and error states."
-        },
-        {
-          "path": "frontend/src/hooks/useAddComment.ts",
-          "operation": "create",
-          "description": "Create React mutation hook for adding comments that calls the backend addComment method with videoId and content. On success, invalidate the comments query to refresh the list. Include error handling for unauthorized users."
-        },
-        {
-          "path": "frontend/src/components/CommentSection.tsx",
-          "operation": "create",
-          "description": "Create comment section component that displays all comments for a video using the useComments hook. Show each comment with author principal, timestamp formatted as relative time, and content text. Include a comment input form with textarea and submit button that uses the useAddComment hook. Show authentication prompt if user is not logged in. Display comments in chronological order (oldest first)."
-        },
-        {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Import and render the CommentSection component below the video metadata section, passing the current videoId as a prop. Position it after the description to create a natural flow from video content to user interactions."
-        }
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "summary": "Allow users to set and edit a custom channel name instead of displaying their principal, with support for shorter custom names",
-      "acceptanceCriteria": [
-        "Users can set a custom channel name in their profile or settings",
-        "Channel name is displayed instead of principal on video cards, photo cards, and player pages",
-        "Users can edit their channel name at any time",
-        "Backend stores channel name associated with user principal",
-        "Channel name has a maximum character limit for shorter names"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useChannelName.ts",
-          "operation": "create",
-          "description": "Create React Query hook that fetches the channel name for a given user principal using the backend getChannelName method. Include caching with principal as query key."
-        },
-        {
-          "path": "frontend/src/hooks/useSetChannelName.ts",
-          "operation": "create",
-          "description": "Create React mutation hook for setting the channel name that calls the backend setChannelName method. On success, invalidate relevant queries including user profile and channel name cache. Include validation for maximum character limit."
-        },
-        {
-          "path": "frontend/src/components/ChannelNameDisplay.tsx",
-          "operation": "create",
-          "description": "Create reusable component that accepts a Principal and displays the user's channel name using the useChannelName hook. Show a loading state while fetching. If no channel name exists, display a truncated version of the principal (first 8 chars + ... + last 4 chars)."
-        },
-        {
-          "path": "frontend/src/components/ProfileSetupModal.tsx",
-          "operation": "create",
-          "description": "Create modal component for initial profile setup that prompts authenticated users without profiles to enter their name and optional channel name. Use the authorization component's saveCallerUserProfile method with the channelName field included in the UserProfile. Show validation for channel name character limit (max 30 characters). Display on first login when getCallerUserProfile returns null."
-        },
-        {
-          "path": "frontend/src/pages/Settings.tsx",
-          "operation": "create",
-          "description": "Create settings page with form for editing user profile including name and channel name fields. Pre-populate with current values from getCallerUserProfile. Use useSetChannelName hook for channel name updates and saveCallerUserProfile for profile updates. Include character counter showing remaining characters for channel name (max 30). Require authentication to access."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Add route registration for the new Settings page at path /settings. Include the route in the router configuration alongside existing routes."
-        },
-        {
-          "path": "frontend/src/components/Layout.tsx",
-          "operation": "modify",
-          "description": "Add Settings link to the navigation menu that appears when user is authenticated. Position it near the user profile or in a user menu dropdown. Also conditionally render the ProfileSetupModal component when user is authenticated but has no profile."
-        },
-        {
-          "path": "frontend/src/components/VideoCard.tsx",
-          "operation": "modify",
-          "description": "Replace the direct principal display with the ChannelNameDisplay component, passing video.uploader as the principal prop. This will show the channel name instead of the raw principal."
-        },
-        {
-          "path": "frontend/src/components/PhotoCard.tsx",
-          "operation": "modify",
-          "description": "Replace the direct principal display with the ChannelNameDisplay component, passing photo.uploader as the principal prop. This will show the channel name instead of the raw principal."
-        },
-        {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Replace the direct principal display in the uploader metadata section with the ChannelNameDisplay component, passing video.uploader as the principal prop."
+          "description": "Verify that the video player page correctly uses ExternalBlob.getDirectURL() to render video content from the blob-storage component. Ensure the video element properly handles the direct URL for streaming and that any errors during blob URL resolution are caught and displayed to the user."
         },
         {
           "path": "frontend/src/pages/PhotoViewer.tsx",
           "operation": "modify",
-          "description": "Replace the direct principal display in the uploader metadata section with the ChannelNameDisplay component, passing photo.uploader as the principal prop."
-        }
-      ]
-    },
-    {
-      "id": "REQ-20",
-      "summary": "Add video quality selector to video player that allows users to choose playback quality for online viewing",
-      "acceptanceCriteria": [
-        "Quality selector control is visible in video player interface",
-        "Users can select from available quality options (e.g., 360p, 480p, 720p, 1080p)",
-        "Video playback adjusts to selected quality",
-        "Selected quality preference is maintained during playback session"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/VideoQualitySelector.tsx",
-          "operation": "create",
-          "description": "Create video quality selector component that renders a dropdown or button group with quality options (Auto, 360p, 480p, 720p, 1080p). Use local state to track selected quality. Apply the selected quality to the video element by adjusting the playback quality property if supported by the browser, or display info message that quality selection is limited by browser capabilities. Style to match video player controls aesthetic."
+          "description": "Verify that the photo viewer page correctly uses ExternalBlob.getDirectURL() to render photo content from the blob-storage component. Ensure the image element properly handles the direct URL and that any errors during blob URL resolution are caught and displayed to the user."
         },
         {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
+          "path": "frontend/src/components/VideoCard.tsx",
           "operation": "modify",
-          "description": "Integrate the VideoQualitySelector component into the video player interface, positioning it near the video controls (bottom-right or top-right corner). Pass necessary props to control the video element's quality settings. Maintain selected quality in component state for the current playback session."
+          "description": "Verify that video card thumbnail rendering correctly handles ExternalBlob data if thumbnails are derived from video files. Ensure proper fallback to the generated video placeholder image at frontend/public/assets/generated/video-placeholder.dim_320x180.png when video data is unavailable or still loading."
+        },
+        {
+          "path": "frontend/src/components/PhotoCard.tsx",
+          "operation": "modify",
+          "description": "Verify that photo card thumbnail rendering correctly handles ExternalBlob data. Ensure proper fallback to the generated photo placeholder image at frontend/public/assets/generated/photo-placeholder.dim_320x320.png when photo data is unavailable or still loading."
+        },
+        {
+          "path": "frontend/src/hooks/useVideos.ts",
+          "operation": "modify",
+          "description": "Review the video listing logic to ensure it properly handles the two-step fetch (metadata then full data) and that ExternalBlob deserialization works correctly for all videos. Verify error handling for partial failures and ensure the hook gracefully handles cases where some videos fail to load."
+        },
+        {
+          "path": "frontend/src/hooks/usePhotos.ts",
+          "operation": "modify",
+          "description": "Review the photo listing logic to ensure it properly handles the two-step fetch (metadata then full data) and that ExternalBlob deserialization works correctly for all photos. Verify error handling for partial failures and ensure the hook gracefully handles cases where some photos fail to load."
         }
       ]
     }

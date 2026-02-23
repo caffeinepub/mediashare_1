@@ -1,28 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { Video } from '../backend';
+import type { VideoMetadata } from '../backend';
 
 export function useVideos() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<Array<{ id: string; data: Video }>>({
+  return useQuery<VideoMetadata[]>({
     queryKey: ['videos'],
     queryFn: async () => {
-      if (!actor) return [];
-      
-      // Get list of video metadata
-      const videoMetadata = await actor.listVideos();
-      
-      // Fetch full video data for each video
-      const videos = await Promise.all(
-        videoMetadata.map(async (meta) => {
-          const videoData = await actor.getVideo(meta.id);
-          return { id: meta.id, data: videoData };
-        })
-      );
-      
-      return videos;
+      if (!actor) throw new Error('Actor not available');
+      return actor.listVideos();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
+    retry: false,
   });
 }

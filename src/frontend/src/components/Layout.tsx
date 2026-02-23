@@ -2,7 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { AuthButton } from './AuthButton';
 import { ProfileSetupModal } from './ProfileSetupModal';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { Video, Image, Upload, Home, Settings as SettingsIcon } from 'lucide-react';
+import { Video, Image, Upload, Home, Settings as SettingsIcon, Crown } from 'lucide-react';
 import { SiX, SiFacebook, SiInstagram } from 'react-icons/si';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,15 +76,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
             {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate({ to: '/settings' })}
-                className="gap-2"
-              >
-                <SettingsIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Settings</span>
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate({ to: '/upgrade' })}
+                  className="gap-2 text-chart-1 hover:text-chart-1"
+                >
+                  <Crown className="w-4 h-4" />
+                  <span className="hidden sm:inline">Upgrade</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate({ to: '/settings' })}
+                  className="gap-2"
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </Button>
+              </>
             )}
             <AuthButton />
           </div>

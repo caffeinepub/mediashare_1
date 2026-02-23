@@ -4,10 +4,12 @@ import { VideoGallery } from './pages/VideoGallery';
 import { PhotoGallery } from './pages/PhotoGallery';
 import { UploadVideo } from './pages/UploadVideo';
 import { UploadPhoto } from './pages/UploadPhoto';
-import { VideoPlayer } from './pages/VideoPlayer';
-import { PhotoViewer } from './pages/PhotoViewer';
+import VideoPlayer from './pages/VideoPlayer';
+import PhotoViewer from './pages/PhotoViewer';
 import { Home } from './pages/Home';
 import { Settings } from './pages/Settings';
+import { ChannelProfile } from './pages/ChannelProfile';
+import { Upgrade } from './pages/Upgrade';
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -65,6 +67,18 @@ const settingsRoute = createRoute({
   component: Settings,
 });
 
+const channelProfileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/channel/$principal',
+  component: ChannelProfile,
+});
+
+const upgradeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/upgrade',
+  component: Upgrade,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   videosRoute,
@@ -74,6 +88,8 @@ const routeTree = rootRoute.addChildren([
   videoPlayerRoute,
   photoViewerRoute,
   settingsRoute,
+  channelProfileRoute,
+  upgradeRoute,
 ]);
 
 const router = createRouter({ routeTree });

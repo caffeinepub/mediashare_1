@@ -7,25 +7,23 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export class ExternalBlob {
-    getBytes(): Promise<Uint8Array<ArrayBuffer>>;
-    getDirectURL(): string;
-    static fromURL(url: string): ExternalBlob;
-    static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
-    withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
-}
 export interface Video {
     title: string;
     likeCount: bigint;
-    file: ExternalBlob;
+    file: Uint8Array;
     description: string;
     commentCount: bigint;
     uploader: Principal;
     uploadTime: Time;
 }
+export interface UserProfile {
+    channelName?: string;
+    name: string;
+    accountCreation: Time;
+}
 export interface Photo {
     title: string;
-    file: ExternalBlob;
+    file: Uint8Array;
     description: string;
     uploader: Principal;
     uploadTime: Time;
@@ -53,9 +51,10 @@ export interface VideoMetadata {
     uploader: Principal;
     uploadTime: Time;
 }
-export interface UserProfile {
-    channelName?: string;
-    name: string;
+export interface UserStats {
+    totalVideosUploaded: bigint;
+    accountCreation: Time;
+    totalPhotosUploaded: bigint;
 }
 export enum UserRole {
     admin = "admin",
@@ -79,6 +78,7 @@ export interface backendInterface {
     getComments(videoId: string): Promise<Array<Comment>>;
     getPhoto(photoId: string): Promise<Photo>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getUserStats(user: Principal): Promise<UserStats>;
     getVideo(videoId: string): Promise<Video>;
     isCallerAdmin(): Promise<boolean>;
     likeVideo(videoId: string): Promise<void>;
@@ -90,6 +90,6 @@ export interface backendInterface {
     updateComment(videoId: string, commentId: bigint, newContent: string): Promise<void>;
     updatePhoto(photoId: string, title: string, description: string): Promise<void>;
     updateVideo(videoId: string, title: string, description: string): Promise<void>;
-    uploadPhoto(title: string, description: string, file: ExternalBlob): Promise<string>;
-    uploadVideo(title: string, description: string, file: ExternalBlob): Promise<string>;
+    uploadPhoto(title: string, description: string, file: Uint8Array): Promise<string>;
+    uploadVideo(title: string, description: string, file: Uint8Array): Promise<string>;
 }

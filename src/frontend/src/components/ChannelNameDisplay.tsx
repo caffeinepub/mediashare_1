@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useChannelName } from '../hooks/useChannelName';
 import type { Principal } from '@icp-sdk/core/principal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,5 +21,14 @@ export function ChannelNameDisplay({ principal, className = '' }: ChannelNameDis
     ? `${principalStr.slice(0, 8)}...${principalStr.slice(-4)}`
     : channelName;
 
-  return <span className={className}>{displayName}</span>;
+  return (
+    <Link
+      to="/channel/$principal"
+      params={{ principal: principalStr }}
+      className={`hover:underline hover:text-chart-1 transition-colors cursor-pointer ${className}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {displayName}
+    </Link>
+  );
 }

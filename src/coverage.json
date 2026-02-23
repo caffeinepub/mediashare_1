@@ -1,138 +1,96 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-22T10:41:43.183Z",
+  "generatedAt": "2026-02-22T13:14:54.743Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 4,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-16",
-        "summary": "Add download button to video player page that allows users to download the video file they are currently viewing",
-        "status": "implemented",
+        "id": "REQ-1",
+        "summary": "Diagnose and resolve the deployment failure that occurred when pushing code to the network",
+        "status": "missing",
         "plannedFiles": [
-          "frontend/src/pages/VideoPlayer.tsx"
+          "frontend/src/hooks/useActor.ts",
+          "frontend/src/main.tsx"
         ],
-        "matchedFiles": [
-          "frontend/src/pages/VideoPlayer.tsx"
-        ]
+        "matchedFiles": []
       },
       {
-        "id": "REQ-17",
-        "summary": "Implement like functionality for videos that allows users to like videos and displays the total like count",
+        "id": "REQ-2",
+        "summary": "Verify backend migration logic properly handles the upgrade from existing state to new state without data loss",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Ensure all backend actor methods have proper type signatures and return values matching the candid interface",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Validate that frontend imports and actor integration code correctly reference the deployed backend canister",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useVideoLike.ts",
+          "frontend/src/backend.d.ts",
+          "frontend/src/hooks/useVideoUpload.ts",
+          "frontend/src/hooks/usePhotoUpload.ts",
+          "frontend/src/hooks/useVideo.ts",
+          "frontend/src/hooks/usePhoto.ts",
           "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/components/VideoCard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useVideoLike.ts",
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/components/VideoCard.tsx"
-        ]
-      },
-      {
-        "id": "REQ-18",
-        "summary": "Add comment system for videos that allows users to post comments and view all comments on a video",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useComments.ts",
-          "frontend/src/hooks/useAddComment.ts",
-          "frontend/src/components/CommentSection.tsx",
-          "frontend/src/pages/VideoPlayer.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useComments.ts",
-          "frontend/src/hooks/useAddComment.ts",
-          "frontend/src/components/CommentSection.tsx",
-          "frontend/src/pages/VideoPlayer.tsx"
-        ]
-      },
-      {
-        "id": "REQ-19",
-        "summary": "Allow users to set and edit a custom channel name instead of displaying their principal, with support for shorter custom names",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useChannelName.ts",
-          "frontend/src/hooks/useSetChannelName.ts",
-          "frontend/src/components/ChannelNameDisplay.tsx",
-          "frontend/src/components/ProfileSetupModal.tsx",
-          "frontend/src/pages/Settings.tsx",
-          "frontend/src/App.tsx",
-          "frontend/src/components/Layout.tsx",
+          "frontend/src/pages/PhotoViewer.tsx",
           "frontend/src/components/VideoCard.tsx",
           "frontend/src/components/PhotoCard.tsx",
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/pages/PhotoViewer.tsx"
+          "frontend/src/hooks/useVideos.ts",
+          "frontend/src/hooks/usePhotos.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useChannelName.ts",
-          "frontend/src/hooks/useSetChannelName.ts",
-          "frontend/src/components/ChannelNameDisplay.tsx",
-          "frontend/src/components/ProfileSetupModal.tsx",
-          "frontend/src/pages/Settings.tsx",
-          "frontend/src/App.tsx",
-          "frontend/src/components/Layout.tsx",
+          "frontend/src/backend.d.ts",
+          "frontend/src/hooks/useVideoUpload.ts",
+          "frontend/src/hooks/usePhotoUpload.ts",
+          "frontend/src/hooks/useVideo.ts",
+          "frontend/src/hooks/usePhoto.ts",
+          "frontend/src/pages/VideoPlayer.tsx",
+          "frontend/src/pages/PhotoViewer.tsx",
           "frontend/src/components/VideoCard.tsx",
           "frontend/src/components/PhotoCard.tsx",
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/pages/PhotoViewer.tsx"
-        ]
-      },
-      {
-        "id": "REQ-20",
-        "summary": "Add video quality selector to video player that allows users to choose playback quality for online viewing",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/VideoQualitySelector.tsx",
-          "frontend/src/pages/VideoPlayer.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/VideoQualitySelector.tsx",
-          "frontend/src/pages/VideoPlayer.tsx"
+          "frontend/src/hooks/useVideos.ts",
+          "frontend/src/hooks/usePhotos.ts"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/authorization/MixinAuthorization.mo",
-    "backend/authorization/access-control.mo",
     "backend/main.mo",
     "backend/migration.mo",
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/ChannelNameDisplay.tsx",
-    "frontend/src/components/CommentSection.tsx",
-    "frontend/src/components/Layout.tsx",
     "frontend/src/components/PhotoCard.tsx",
-    "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/components/VideoCard.tsx",
-    "frontend/src/components/VideoQualitySelector.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useActor.ts",
-    "frontend/src/hooks/useAddComment.ts",
-    "frontend/src/hooks/useChannelName.ts",
-    "frontend/src/hooks/useComments.ts",
-    "frontend/src/hooks/useGetCallerUserProfile.ts",
-    "frontend/src/hooks/useSaveCallerUserProfile.ts",
-    "frontend/src/hooks/useSetChannelName.ts",
-    "frontend/src/hooks/useVideoLike.ts",
+    "frontend/src/hooks/usePhoto.ts",
+    "frontend/src/hooks/usePhotoUpload.ts",
+    "frontend/src/hooks/usePhotos.ts",
+    "frontend/src/hooks/useVideo.ts",
+    "frontend/src/hooks/useVideoUpload.ts",
+    "frontend/src/hooks/useVideos.ts",
+    "frontend/src/pages/ChannelProfile.tsx",
+    "frontend/src/pages/PhotoGallery.tsx",
     "frontend/src/pages/PhotoViewer.tsx",
-    "frontend/src/pages/Settings.tsx",
     "frontend/src/pages/VideoPlayer.tsx",
-    "frontend/src/utils/urlParams.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

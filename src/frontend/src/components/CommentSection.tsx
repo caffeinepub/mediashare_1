@@ -29,6 +29,7 @@ export function CommentSection({ videoId }: CommentSectionProps) {
       videoId,
       content: commentText.trim(),
     });
+
     setCommentText('');
   };
 
@@ -37,12 +38,11 @@ export function CommentSection({ videoId }: CommentSectionProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5" />
-          Comments {comments && comments.length > 0 && `(${comments.length})`}
+          Comments {comments && `(${comments.length})`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Comment Form */}
-        {isAuthenticated ? (
+        {isAuthenticated && (
           <form onSubmit={handleSubmit} className="space-y-3">
             <Textarea
               placeholder="Add a comment..."
@@ -55,65 +55,60 @@ export function CommentSection({ videoId }: CommentSectionProps) {
               <Button
                 type="submit"
                 disabled={!commentText.trim() || addCommentMutation.isPending}
-                size="sm"
+                className="gap-2"
               >
                 {addCommentMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Posting...
-                  </>
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Post Comment
-                  </>
+                  <Send className="w-4 h-4" />
                 )}
+                Post Comment
               </Button>
             </div>
           </form>
-        ) : (
-          <div className="text-center py-6 bg-muted/30 rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              Please sign in to leave a comment
-            </p>
+        )}
+
+        {!isAuthenticated && (
+          <div className="text-center py-4 text-muted-foreground">
+            Please sign in to leave a comment
           </div>
         )}
 
-        {/* Comments List */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : comments && comments.length > 0 ? (
-          <div className="space-y-4">
-            {comments.map((comment) => {
-              const timestamp = new Date(Number(comment.timestamp) / 1000000);
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : !comments || comments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No comments yet. Be the first to comment!
+            </div>
+          ) : (
+            comments.map((comment) => {
+              const commentDate = new Date(Number(comment.timestamp) / 1000000);
               return (
-                <div key={Number(comment.id)} className="flex gap-3 p-4 rounded-lg bg-muted/30">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center flex-shrink-0">
-                    <MessageSquare className="w-5 h-5 text-white" />
+                <div key={Number(comment.id)} className="flex gap-3 p-4 rounded-lg bg-muted/50">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center shrink-0">
+                    <span className="text-white text-sm font-medium">
+                      {comment.author.toString().slice(0, 2).toUpperCase()}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">
                         <ChannelNameDisplay principal={comment.author} />
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(timestamp, { addSuffix: true })}
+                        {formatDistanceToNow(commentDate, { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
                   </div>
                 </div>
               );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No comments yet. Be the first to comment!</p>
-          </div>
-        )}
+            })
+          )}
+        </div>
       </CardContent>
     </Card>
   );

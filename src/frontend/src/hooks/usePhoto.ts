@@ -2,16 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { Photo } from '../backend';
 
-export function usePhoto(photoId: string) {
-  const { actor, isFetching } = useActor();
+export function usePhoto(photoId: string | undefined) {
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<{ id: string; data: Photo }>({
+  return useQuery<Photo>({
     queryKey: ['photo', photoId],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not initialized');
-      const photo = await actor.getPhoto(photoId);
-      return { id: photoId, data: photo };
+      if (!actor || !photoId) throw new Error('Actor or photoId not available');
+      return actor.getPhoto(photoId);
     },
-    enabled: !!actor && !isFetching && !!photoId,
+    enabled: !!actor && !actorFetching && !!photoId,
+    retry: false,
   });
 }

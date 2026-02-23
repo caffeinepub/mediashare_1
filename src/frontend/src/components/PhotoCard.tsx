@@ -1,46 +1,36 @@
-import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar } from 'lucide-react';
-import type { Photo } from '../backend';
+import { useNavigate } from '@tanstack/react-router';
 import { ChannelNameDisplay } from './ChannelNameDisplay';
+import type { PhotoMetadata } from '../backend';
 
 interface PhotoCardProps {
-  photo: {
-    id: string;
-    data: Photo;
-  };
+  photo: PhotoMetadata;
 }
 
 export function PhotoCard({ photo }: PhotoCardProps) {
   const navigate = useNavigate();
-  const uploadDate = new Date(Number(photo.data.uploadTime) / 1000000);
-  const photoUrl = photo.data.file.getDirectURL();
 
   return (
     <Card
-      className="group cursor-pointer hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-chart-2"
+      className="cursor-pointer hover:shadow-lg transition-shadow"
       onClick={() => navigate({ to: '/photo/$id', params: { id: photo.id } })}
     >
-      <div className="aspect-square bg-muted relative overflow-hidden">
-        <img
-          src={photoUrl}
-          alt={photo.data.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-      </div>
-      <CardContent className="p-4 space-y-3">
-        <h3 className="font-semibold line-clamp-2 group-hover:text-chart-2 transition-colors">
-          {photo.data.title}
-        </h3>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="truncate font-medium">
-            <ChannelNameDisplay principal={photo.data.uploader} />
-          </span>
+      <CardContent className="p-0">
+        <div className="aspect-square bg-muted relative overflow-hidden">
+          <img
+            src="/assets/generated/photo-placeholder.dim_320x320.png"
+            alt={photo.title}
+            className="w-full h-full object-cover"
+          />
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Calendar className="w-3 h-3" />
-          <span>{uploadDate.toLocaleDateString()}</span>
+        <div className="p-4">
+          <h3 className="font-semibold text-lg mb-2 line-clamp-2">{photo.title}</h3>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <ChannelNameDisplay principal={photo.uploader} />
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {new Date(Number(photo.uploadTime) / 1000000).toLocaleDateString()}
+          </div>
         </div>
       </CardContent>
     </Card>
