@@ -1,92 +1,121 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Deployment Error - Frontend Implementation",
+  "title": "Create video player page with player, metadata, comments, and related videos",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Diagnose and resolve deployment failure - Frontend aspects",
+      "summary": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
       "acceptanceCriteria": [
-        "The application successfully deploys to the Internet Computer network",
-        "All canisters initialize without errors",
-        "The deployment completes without throwing errors"
+        "Video player is prominently displayed at the top of the page",
+        "Player uses HTML5 video element",
+        "Video plays when user clicks on a video card from the homepage"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useActor.ts",
+          "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Review and verify actor initialization code handles canister ID resolution correctly post-deployment. Ensure the actor creation logic properly references the deployed backend canister and handles any network-specific configuration. Check that error handling during actor initialization is comprehensive and logs meaningful diagnostic information."
+          "description": "Restructure the page layout to prominently display the HTML5 video player at the top. Use the blob-storage component's ExternalBlob.getDirectURL() method to obtain the streaming video URL for the HTML5 video element. Ensure proper video controls are enabled and the player is responsive. Verify the blob-storage component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Display video title in bold below the video player",
+      "acceptanceCriteria": [
+        "Video title is displayed below the player",
+        "Title text is bold",
+        "Title matches the video metadata"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/VideoPlayer.tsx",
+          "operation": "modify",
+          "description": "Add a bold title display immediately below the video player element. Use the video metadata from the useVideo hook to populate the title. Apply appropriate styling (font-weight-bold or similar) to make the title visually prominent while maintaining the dark theme with red accents."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add a Subscribe button next to the channel name below the video player",
+      "acceptanceCriteria": [
+        "Subscribe button appears next to the channel name",
+        "Button is visually distinct and clickable",
+        "Backend tracks subscription relationships between users and channels",
+        "Button shows subscribed state if user is already subscribed"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/VideoPlayer.tsx",
+          "operation": "modify",
+          "description": "Add a Subscribe button next to the ChannelNameDisplay component in the video metadata section. Implement click handler that calls a backend subscription method. Show loading state during subscription action. Display 'Subscribe' or 'Subscribed' text based on current subscription status. Use the authorization component to ensure the user is authenticated before allowing subscription. Style the button to be visually distinct with the red accent color when active."
         },
         {
-          "path": "frontend/src/main.tsx",
-          "operation": "modify",
-          "description": "Verify that the application entry point correctly initializes all required providers (React Query, Internet Identity) and that there are no configuration issues preventing successful deployment. Ensure environment-specific settings are properly configured for network deployment."
+          "path": "frontend/src/hooks/useSubscribe.ts",
+          "operation": "create",
+          "description": "Create a React Query mutation hook for subscribing to channels. Call the backend capability to track subscription relationships. Invalidate subscription status queries on success. Handle authentication requirements using the authorization component. Show toast notifications for success and error states."
+        },
+        {
+          "path": "frontend/src/hooks/useSubscriptionStatus.ts",
+          "operation": "create",
+          "description": "Create a React Query hook to fetch the current user's subscription status for a given channel/uploader principal. Return a boolean indicating whether the user is subscribed. Enable the query only when both actor and principal are available."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Validate frontend imports and actor integration reference deployed backend correctly",
+      "summary": "Add an expandable description box below the video metadata that can be collapsed and expanded",
       "acceptanceCriteria": [
-        "Frontend successfully connects to the backend actor after deployment",
-        "All API calls from hooks properly resolve to backend methods",
-        "No console errors related to actor initialization or canister communication"
+        "Description box is initially collapsed or truncated",
+        "User can click to expand the full description",
+        "User can collapse the description after expanding",
+        "Description content matches video metadata"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/backend.d.ts",
+          "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Verify that all type definitions in the backend interface match the actual Candid interface exported by the deployed backend canister. Ensure that all method signatures, parameter types, and return types are correctly defined. Check that ExternalBlob types from blob-storage component are properly integrated where video and photo file fields are used."
-        },
-        {
-          "path": "frontend/src/hooks/useVideoUpload.ts",
-          "operation": "modify",
-          "description": "Verify that the video upload hook correctly converts Files to ExternalBlob using the blob-storage component and that the uploadVideo backend method call passes the correct ExternalBlob representation. Verify the component's usage instructions before implementing. Ensure error handling captures any type mismatches or serialization issues during upload."
-        },
-        {
-          "path": "frontend/src/hooks/usePhotoUpload.ts",
-          "operation": "modify",
-          "description": "Verify that the photo upload hook correctly converts Files to ExternalBlob using the blob-storage component and that the uploadPhoto backend method call passes the correct ExternalBlob representation. Verify the component's usage instructions before implementing. Ensure error handling captures any type mismatches or serialization issues during upload."
-        },
-        {
-          "path": "frontend/src/hooks/useVideo.ts",
-          "operation": "modify",
-          "description": "Verify that the video fetch hook correctly handles ExternalBlob data returned from the backend. Ensure that the Video type's file field is properly deserialized and can be used with the blob-storage component's getDirectURL() or getBytes() methods for display. Add error handling for any data format inconsistencies."
-        },
-        {
-          "path": "frontend/src/hooks/usePhoto.ts",
-          "operation": "modify",
-          "description": "Verify that the photo fetch hook correctly handles ExternalBlob data returned from the backend. Ensure that the Photo type's file field is properly deserialized and can be used with the blob-storage component's getDirectURL() or getBytes() methods for display. Add error handling for any data format inconsistencies."
-        },
+          "description": "Add an expandable description section below the video metadata (title, channel, subscribe button). Initially show only the first 2-3 lines of the description with a 'Show more' button. When clicked, expand to show the full description and change the button to 'Show less'. Use React state to track the expanded/collapsed state. Apply proper text overflow handling for the collapsed state."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+      "acceptanceCriteria": [
+        "Comments section is positioned at the bottom of the page",
+        "Text input field is labeled 'Add a comment'",
+        "Existing comments are displayed above the input",
+        "New comments appear after submission"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Verify that the video player page correctly uses ExternalBlob.getDirectURL() to render video content from the blob-storage component. Ensure the video element properly handles the direct URL for streaming and that any errors during blob URL resolution are caught and displayed to the user."
-        },
+          "description": "Position the existing CommentSection component at the bottom of the page layout, below the video player and description. Ensure the component receives the videoId prop and is properly integrated into the page structure. The CommentSection component already handles the 'Add a comment' input and comment display functionality."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
+      "acceptanceCriteria": [
+        "Related videos list appears on the right side of the player",
+        "Videos are displayed in a vertical list format",
+        "Video cards are smaller than the main homepage grid cards",
+        "Clicking a related video navigates to that video's player page",
+        "List shows at least 5-10 related videos"
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/pages/PhotoViewer.tsx",
+          "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Verify that the photo viewer page correctly uses ExternalBlob.getDirectURL() to render photo content from the blob-storage component. Ensure the image element properly handles the direct URL and that any errors during blob URL resolution are caught and displayed to the user."
+          "description": "Restructure the page layout to use a two-column layout with the main video player and metadata on the left, and a related videos sidebar on the right. Implement simple related videos logic (e.g., same uploader or recent videos from all uploads). Render VideoCard components in a vertical list format with reduced sizing. Ensure clicking a related video navigates to that video's player page using TanStack Router navigation. Make the layout responsive so related videos move below the main content on mobile."
         },
         {
           "path": "frontend/src/components/VideoCard.tsx",
           "operation": "modify",
-          "description": "Verify that video card thumbnail rendering correctly handles ExternalBlob data if thumbnails are derived from video files. Ensure proper fallback to the generated video placeholder image at frontend/public/assets/generated/video-placeholder.dim_320x180.png when video data is unavailable or still loading."
-        },
-        {
-          "path": "frontend/src/components/PhotoCard.tsx",
-          "operation": "modify",
-          "description": "Verify that photo card thumbnail rendering correctly handles ExternalBlob data. Ensure proper fallback to the generated photo placeholder image at frontend/public/assets/generated/photo-placeholder.dim_320x320.png when photo data is unavailable or still loading."
-        },
-        {
-          "path": "frontend/src/hooks/useVideos.ts",
-          "operation": "modify",
-          "description": "Review the video listing logic to ensure it properly handles the two-step fetch (metadata then full data) and that ExternalBlob deserialization works correctly for all videos. Verify error handling for partial failures and ensure the hook gracefully handles cases where some videos fail to load."
-        },
-        {
-          "path": "frontend/src/hooks/usePhotos.ts",
-          "operation": "modify",
-          "description": "Review the photo listing logic to ensure it properly handles the two-step fetch (metadata then full data) and that ExternalBlob deserialization works correctly for all photos. Verify error handling for partial failures and ensure the hook gracefully handles cases where some photos fail to load."
+          "description": "Add an optional 'compact' or 'small' variant prop to VideoCard component that renders a smaller, horizontal layout suitable for the related videos sidebar. Adjust thumbnail size, title truncation, and metadata display to fit the compact format while maintaining readability."
         }
       ]
     }

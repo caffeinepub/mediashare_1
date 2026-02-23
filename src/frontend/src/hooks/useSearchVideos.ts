@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { Video } from '../backend';
+import type { ExtendedVideo } from '../backend';
 
 export function useSearchVideos(searchTerm: string) {
   const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<Array<{ id: string; data: Video }>>({
+  return useQuery<Array<{ id: string; data: ExtendedVideo }>>({
     queryKey: ['videos', 'search', searchTerm],
     queryFn: async () => {
       if (!actor) return [];

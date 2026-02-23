@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useVideoUpload } from '../hooks/useVideoUpload';
 import { UpgradePrompt } from '../components/UpgradePrompt';
+import { ThumbnailSelector } from '../components/ThumbnailSelector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Video, Upload, Loader2, CheckCircle2 } from 'lucide-react';
+import { Video, Upload, Loader2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ExternalBlob } from '../backend';
+import { useMemo } from 'react';
+
+const ACCEPTED_VIDEO_FORMATS = ['video/mp4', 'video/webm', 'video/ogg'];
+const MAX_FILE_SIZE_MB = 500; // 500MB limit
 
 export function UploadVideo() {
   const navigate = useNavigate();
@@ -18,13 +24,47 @@ export function UploadVideo() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const { uploadVideo, isUploading, uploadProgress, error, isSuccess } = useVideoUpload();
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
+  const [uploadedVideoBlob, setUploadedVideoBlob] = useState<ExternalBlob | null>(null);
+  const { uploadVideo, isUploading, uploadProgress, error, isSuccess, reset } = useVideoUpload();
 
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
+  // Get video URL for thumbnail generation
+  const videoUrl = useMemo(() => {
+    if (!uploadedVideoBlob) return null;
+    return uploadedVideoBlob.getDirectURL();
+  }, [uploadedVideoBlob]);
+
+  const validateFile = (file: File): string | null => {
+    // Check file type
+    if (!ACCEPTED_VIDEO_FORMATS.includes(file.type)) {
+      return `Invalid file format. Please upload a video file (MP4, WebM, or OGG).`;
+    }
+
+    // Check file size
+    const fileSizeMB = file.size / 1024 / 1024;
+    if (fileSizeMB > MAX_FILE_SIZE_MB) {
+      return `File size exceeds ${MAX_FILE_SIZE_MB}MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`;
+    }
+
+    return null;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValidationError(null);
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      const error = validateFile(selectedFile);
+      
+      if (error) {
+        setValidationError(error);
+        setFile(null);
+        e.target.value = '';
+      } else {
+        setFile(selectedFile);
+      }
     }
   };
 
@@ -32,7 +72,46 @@ export function UploadVideo() {
     e.preventDefault();
     if (!file || !title.trim()) return;
 
-    await uploadVideo({ title, description, file });
+    // Validate again before upload
+    const error = validateFile(file);
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+
+    try {
+      const result = await uploadVideo({ title, description, file });
+      if (result) {
+        setUploadedVideoId(result.videoId);
+        setUploadedVideoBlob(result.videoBlob);
+      }
+    } catch (err) {
+      // Error is handled by the mutation
+      console.error('Upload failed:', err);
+    }
+  };
+
+  const handleRetry = () => {
+    if (file && title.trim()) {
+      handleSubmit(new Event('submit') as any);
+    }
+  };
+
+  const handleUploadAnother = () => {
+    setTitle('');
+    setDescription('');
+    setFile(null);
+    setValidationError(null);
+    setUploadedVideoId(null);
+    setUploadedVideoBlob(null);
+    reset();
+  };
+
+  const handleThumbnailComplete = () => {
+    // Navigate to the video player page
+    if (uploadedVideoId) {
+      navigate({ to: '/video/$id', params: { id: uploadedVideoId } });
+    }
   };
 
   if (!isAuthenticated) {
@@ -48,41 +127,43 @@ export function UploadVideo() {
     );
   }
 
-  if (isSuccess) {
+  // Show thumbnail selector after successful upload
+  if (isSuccess && uploadedVideoId && videoUrl) {
     return (
-      <div className="container py-16 max-w-2xl mx-auto">
-        <Card className="border-green-500/50 bg-green-500/5">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <CardTitle>Upload Successful!</CardTitle>
-                <CardDescription>Your video has been uploaded successfully.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-3">
-              <Button onClick={() => navigate({ to: '/videos' })} className="flex-1">
-                View All Videos
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setTitle('');
-                  setDescription('');
-                  setFile(null);
-                  window.location.reload();
-                }}
-                className="flex-1"
-              >
-                Upload Another
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="container py-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <ThumbnailSelector
+              videoId={uploadedVideoId}
+              videoUrl={videoUrl}
+              onComplete={handleThumbnailComplete}
+            />
+          </div>
+          <div className="md:col-span-1">
+            <Card className="border-green-500/50 bg-green-500/5">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Upload Complete!</CardTitle>
+                    <CardDescription>Now select a thumbnail</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  onClick={() => handleThumbnailComplete()}
+                  className="w-full"
+                >
+                  Skip Thumbnail
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -105,20 +186,36 @@ export function UploadVideo() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
+                <Alert>
+                  <AlertDescription className="text-sm">
+                    <strong>File Requirements:</strong>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Accepted formats: MP4, WebM, OGG</li>
+                      <li>Maximum file size: {MAX_FILE_SIZE_MB}MB</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+
                 <div className="space-y-2">
                   <Label htmlFor="video-file">Video File *</Label>
                   <Input
                     id="video-file"
                     type="file"
-                    accept="video/*"
+                    accept={ACCEPTED_VIDEO_FORMATS.join(',')}
                     onChange={handleFileChange}
                     disabled={isUploading}
                     required
                   />
-                  {file && (
+                  {file && !validationError && (
                     <p className="text-sm text-muted-foreground">
                       Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
                     </p>
+                  )}
+                  {validationError && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{validationError}</AlertDescription>
+                    </Alert>
                   )}
                 </div>
 
@@ -158,12 +255,27 @@ export function UploadVideo() {
 
                 {error && (
                   <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="flex items-center justify-between">
+                      <span>{error.message}</span>
+                      {error.type === 'network_error' && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRetry}
+                          className="ml-4"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Retry
+                        </Button>
+                      )}
+                    </AlertDescription>
                   </Alert>
                 )}
 
                 <div className="flex gap-3">
-                  <Button type="submit" disabled={!file || !title.trim() || isUploading} className="flex-1">
+                  <Button type="submit" disabled={!file || !title.trim() || isUploading || !!validationError} className="flex-1">
                     {isUploading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />

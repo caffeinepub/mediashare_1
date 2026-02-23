@@ -1,144 +1,117 @@
+import { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { AuthButton } from './AuthButton';
 import { ProfileSetupModal } from './ProfileSetupModal';
+import { Sidebar } from './Sidebar';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { Video, Image, Upload, Home, Settings as SettingsIcon, Crown } from 'lucide-react';
+import { Search, Upload, Menu } from 'lucide-react';
 import { SiX, SiFacebook, SiInstagram } from 'react-icons/si';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { identity } = useInternetIdentity();
   const currentYear = new Date().getFullYear();
   const isAuthenticated = !!identity;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background dark">
       <ProfileSetupModal />
       
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
-                <Video className="w-5 h-5 text-white" />
-              </div>
-              MediaShare
-            </Link>
-            <nav className="hidden md:flex items-center gap-6">
-              <Link
-                to="/"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
-              >
-                <Home className="w-4 h-4" />
-                Home
-              </Link>
-              <Link
-                to="/videos"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
-              >
-                <Video className="w-4 h-4" />
-                Videos
-              </Link>
-              <Link
-                to="/photos"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
-              >
-                <Image className="w-4 h-4" />
-                Photos
-              </Link>
-            </nav>
-          </div>
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
+        <div className="flex h-16 items-center px-4 gap-4">
+          {/* Left: Menu + Logo */}
           <div className="flex items-center gap-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Upload className="w-4 h-4" />
-                  <span className="hidden sm:inline">Upload</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate({ to: '/upload-video' })}>
-                  <Video className="w-4 h-4 mr-2" />
-                  Upload Video
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: '/upload-photo' })}>
-                  <Image className="w-4 h-4 mr-2" />
-                  Upload Photo
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="flex-shrink-0"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+              <img 
+                src="/assets/generated/logo.dim_200x60.png" 
+                alt="Logo" 
+                className="h-8 w-auto"
+              />
+            </Link>
+          </div>
+
+          {/* Center: Search bar */}
+          <div className="flex-1 max-w-2xl mx-auto hidden md:block">
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Search"
+                className="w-full h-10 pl-4 pr-12 rounded-full border-border bg-background"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-10 w-12 rounded-r-full hover:bg-accent"
+              >
+                <Search className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Right: Upload + Auth */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             {isAuthenticated && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate({ to: '/upgrade' })}
-                  className="gap-2 text-chart-1 hover:text-chart-1"
-                >
-                  <Crown className="w-4 h-4" />
-                  <span className="hidden sm:inline">Upgrade</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate({ to: '/settings' })}
-                  className="gap-2"
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Settings</span>
-                </Button>
-              </>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate({ to: '/upload-video' })}
+                className="flex-shrink-0"
+              >
+                <Upload className="w-5 h-5" />
+              </Button>
             )}
             <AuthButton />
           </div>
         </div>
       </header>
 
-      <main className="flex-1">{children}</main>
+      <div className="flex flex-1">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <main className="flex-1 overflow-x-hidden">{children}</main>
+      </div>
 
-      <footer className="border-t border-border/40 bg-muted/30">
+      <footer className="border-t border-border bg-card">
         <div className="container py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <div className="flex items-center gap-2 font-bold text-lg mb-3">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
-                  <Video className="w-4 h-4 text-white" />
-                </div>
-                MediaShare
+              <div className="flex items-center gap-2 mb-3">
+                <img 
+                  src="/assets/generated/logo.dim_200x60.png" 
+                  alt="Logo" 
+                  className="h-6 w-auto"
+                />
               </div>
               <p className="text-sm text-muted-foreground">
-                Share your photos and videos with the world. Built on the Internet Computer.
+                Share your videos with the world. Built on the Internet Computer.
               </p>
             </div>
             <div>
               <h3 className="font-semibold mb-3">Quick Links</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
+                  <Link to="/" className="hover:text-foreground transition-colors">
+                    Home
+                  </Link>
+                </li>
+                <li>
                   <Link to="/videos" className="hover:text-foreground transition-colors">
                     Browse Videos
                   </Link>
                 </li>
                 <li>
-                  <Link to="/photos" className="hover:text-foreground transition-colors">
-                    Browse Photos
-                  </Link>
-                </li>
-                <li>
                   <Link to="/upload-video" className="hover:text-foreground transition-colors">
                     Upload Video
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/upload-photo" className="hover:text-foreground transition-colors">
-                    Upload Photo
                   </Link>
                 </li>
               </ul>
@@ -170,7 +143,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </div>
-          <div className="mt-8 pt-6 border-t border-border/40 text-center text-sm text-muted-foreground">
+          <div className="mt-8 pt-6 border-t border-border text-center text-sm text-muted-foreground">
             <p>
               © {currentYear} MediaShare. Built with love using{' '}
               <a

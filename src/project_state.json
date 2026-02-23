@@ -1,16 +1,60 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
+  "summary": "YouTube-style video platform with dark mode UI, homepage video grid, and video player pages",
+  "architectural_notes": [
+    "Video player page requires routing/navigation from homepage video cards",
+    "HTML5 video player component with controls",
+    "Expandable description component for video metadata"
+  ],
   "known_issues": [],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-validate-that-frontend-imports-and-actor-integration-code-correctly-reference-the-deployed-backend-canister",
-      "title": "Validate that frontend imports and actor integration code correctly reference the deployed backend canister",
+      "id": "feature-update-videoplayer-page-to-display-a-large-html5-video-player-at-the-top-of-the-page-when-a-video-card-is-clicked",
+      "title": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-video-title-in-bold-below-the-video-player",
+      "title": "Display video title in bold below the video player",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-subscribe-button-next-to-the-channel-name-below-the-video-player",
+      "title": "Add a Subscribe button next to the channel name below the video player",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-expandable-description-box-below-the-video-metadata-that-can-be-collapsed-and-expanded",
+      "title": "Add an expandable description box below the video metadata that can be collapsed and expanded",
       "reqIds": [
         "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-comments-section-at-the-bottom-of-the-video-player-page-with-a-text-input-for-add-a-comment",
+      "title": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-a-list-of-related-videos-on-the-right-side-of-the-video-player-in-a-smaller-vertical-list-format",
+      "title": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
+      "reqIds": [
+        "REQ-6"
       ],
       "version": 1
     }
@@ -18,30 +62,36 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Diagnose and resolve the deployment failure that occurred when pushing code to the network",
-      "reqIds": [
-        "REQ-1"
-      ],
+      "summary": "Video player page with navigation from homepage cards",
+      "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Verify backend migration logic properly handles the upgrade from existing state to new state without data loss",
-      "reqIds": [
-        "REQ-2"
-      ],
+      "summary": "Large HTML5 video player on video page",
+      "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Ensure all backend actor methods have proper type signatures and return values matching the candid interface",
-      "reqIds": [
-        "REQ-3"
-      ],
+      "summary": "Video metadata display: title (bold), channel name with Subscribe button, expandable description",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Comments section with 'Add a comment' input",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Related videos sidebar in vertical list format",
+      "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Fix deployment error",
+  "projectName": "YouTube Clone",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

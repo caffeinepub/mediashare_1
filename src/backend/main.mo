@@ -1,25 +1,40 @@
 import Time "mo:core/Time";
 import Map "mo:core/Map";
+import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Iter "mo:core/Iter";
 import Text "mo:core/Text";
 import Set "mo:core/Set";
 import List "mo:core/List";
-import Nat "mo:core/Nat";
-import Migration "migration";
+
+
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
-(with migration = Migration.run)
+// Apply migration on upgrades
+
 actor {
   // Initialize the access control system on canister instantiation
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
   include MixinStorage();
+
+  type ExtendedVideo = {
+    title : Text;
+    description : Text;
+    uploader : Principal;
+    uploadTime : Time.Time;
+    file : Storage.ExternalBlob;
+    likeCount : Nat;
+    commentCount : Nat;
+    tags : [Text];
+    thumbnail : ?Storage.ExternalBlob;
+    viewCount : Nat;
+  };
 
   type VideoMetadata = {
     id : Text;
@@ -29,6 +44,9 @@ actor {
     uploadTime : Time.Time;
     likeCount : Nat;
     commentCount : Nat;
+    tags : [Text];
+    thumbnail : ?Storage.ExternalBlob;
+    viewCount : Nat;
   };
 
   type PhotoMetadata = {
@@ -37,16 +55,6 @@ actor {
     description : Text;
     uploader : Principal;
     uploadTime : Time.Time;
-  };
-
-  type Video = {
-    title : Text;
-    description : Text;
-    uploader : Principal;
-    uploadTime : Time.Time;
-    file : Blob;
-    likeCount : Nat;
-    commentCount : Nat;
   };
 
   type Photo = {
@@ -81,7 +89,7 @@ actor {
     accountCreation : Time.Time;
   };
 
-  let videos = Map.empty<Text, Video>();
+  let videos = Map.empty<Text, ExtendedVideo>();
   let photos = Map.empty<Text, Photo>();
   let comments = Map.empty<Text, [Comment]>();
   let videoLikes = Map.empty<Text, Set.Set<Principal>>();
@@ -97,7 +105,6 @@ actor {
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    // Anyone can view user profiles (public information on video platforms)
     userProfiles.get(user);
   };
 
@@ -116,19 +123,22 @@ actor {
     userProfiles.add(caller, newProfile);
   };
 
-  public shared ({ caller }) func uploadVideo(title : Text, description : Text, file : Blob) : async Text {
+  public shared ({ caller }) func uploadVideo(title : Text, description : Text, tags : [Text], file : Storage.ExternalBlob) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can upload videos");
     };
     let videoId = "video_" # Time.now().toText();
-    let video : Video = {
+    let video : ExtendedVideo = {
       title;
       description;
+      tags;
       uploader = caller;
       uploadTime = Time.now();
       file;
       likeCount = 0;
       commentCount = 0;
+      thumbnail = null;
+      viewCount = 0;
     };
     videos.add(videoId, video);
     videoId;
@@ -150,16 +160,45 @@ actor {
     photoId;
   };
 
-  public query ({ caller }) func getVideo(videoId : Text) : async Video {
-    // Anyone can view videos
+  // incrementVideoViewCount: No authentication required - anyone (including guests) can increment view counts
+  public shared ({ caller }) func incrementVideoViewCount(videoId : Text) : async () {
+    switch (videos.get(videoId)) {
+      case (null) { Runtime.trap("Failed to increment view count: video not found") };
+      case (?video) {
+        let updatedVideo = { video with viewCount = video.viewCount + 1 };
+        videos.add(videoId, updatedVideo);
+      };
+    };
+  };
+
+  public query ({ caller }) func getVideo(videoId : Text) : async ExtendedVideo {
     switch (videos.get(videoId)) {
       case (null) { Runtime.trap("Video not found") };
       case (?video) { video };
     };
   };
 
+  public query ({ caller }) func getVideoMetadata(videoId : Text) : async VideoMetadata {
+    switch (videos.get(videoId)) {
+      case (null) { Runtime.trap("Video not found") };
+      case (?video) {
+        {
+          id = videoId;
+          title = video.title;
+          description = video.description;
+          uploader = video.uploader;
+          uploadTime = video.uploadTime;
+          likeCount = video.likeCount;
+          commentCount = video.commentCount;
+          tags = video.tags;
+          thumbnail = video.thumbnail;
+          viewCount = video.viewCount;
+        };
+      };
+    };
+  };
+
   public query ({ caller }) func getPhoto(photoId : Text) : async Photo {
-    // Anyone can view photos
     switch (photos.get(photoId)) {
       case (null) { Runtime.trap("Photo not found") };
       case (?photo) { photo };
@@ -167,12 +206,10 @@ actor {
   };
 
   public query ({ caller }) func listVideos() : async [VideoMetadata] {
-    // Anyone can list videos
     videos.entries().map(func((id, video)) { { video with id } }).toArray();
   };
 
   public query ({ caller }) func listPhotos() : async [PhotoMetadata] {
-    // Anyone can list photos
     photos.entries().map(func((id, photo)) { { photo with id } }).toArray();
   };
 
@@ -265,7 +302,6 @@ actor {
   };
 
   public query ({ caller }) func getComments(videoId : Text) : async [Comment] {
-    // Anyone can view comments
     switch (videos.get(videoId)) {
       case (null) { Runtime.trap("Video not found") };
       case (?_) {
@@ -305,7 +341,6 @@ actor {
   };
 
   public query ({ caller }) func getChannelName(user : Principal) : async Text {
-    // Anyone can view channel names
     switch (channels.get(user)) {
       case (null) { user.toText() };
       case (?channelName) { channelName };
@@ -313,7 +348,6 @@ actor {
   };
 
   public query ({ caller }) func searchVideos(searchTerm : Text) : async [VideoMetadata] {
-    // Anyone can search videos
     let lowercaseQuery = searchTerm.toLower();
     let filtered = videos.entries().filter(
       func((id, video)) {
@@ -327,12 +361,10 @@ actor {
     switch (videos.get(videoId)) {
       case (null) { Runtime.trap("Video not found") };
       case (?video) {
-        // Only the owner or an admin can delete
         if (video.uploader != caller and not AccessControl.isAdmin(accessControlState, caller)) {
           Runtime.trap("Unauthorized: Only the owner or an admin can delete this video");
         };
         videos.remove(videoId);
-        // Clean up associated data
         comments.remove(videoId);
         videoLikes.remove(videoId);
       };
@@ -343,7 +375,6 @@ actor {
     switch (photos.get(photoId)) {
       case (null) { Runtime.trap("Photo not found") };
       case (?photo) {
-        // Only the owner or an admin can delete
         if (photo.uploader != caller and not AccessControl.isAdmin(accessControlState, caller)) {
           Runtime.trap("Unauthorized: Only the owner or an admin can delete this photo");
         };
@@ -352,18 +383,17 @@ actor {
     };
   };
 
-  public shared ({ caller }) func updateVideo(videoId : Text, title : Text, description : Text) : async () {
+  public shared ({ caller }) func updateVideo(videoId : Text, title : Text, description : Text, tags : [Text]) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update videos");
     };
     switch (videos.get(videoId)) {
       case (null) { Runtime.trap("Video not found") };
       case (?video) {
-        // Only the owner or an admin can update
         if (video.uploader != caller and not AccessControl.isAdmin(accessControlState, caller)) {
           Runtime.trap("Unauthorized: Only the owner or an admin can update this video");
         };
-        let updatedVideo = { video with title; description };
+        let updatedVideo = { video with title; description; tags };
         videos.add(videoId, updatedVideo);
       };
     };
@@ -376,7 +406,6 @@ actor {
     switch (photos.get(photoId)) {
       case (null) { Runtime.trap("Photo not found") };
       case (?photo) {
-        // Only the owner or an admin can update
         if (photo.uploader != caller and not AccessControl.isAdmin(accessControlState, caller)) {
           Runtime.trap("Unauthorized: Only the owner or an admin can update this photo");
         };
@@ -400,7 +429,6 @@ actor {
             switch (commentOpt) {
               case (null) { Runtime.trap("Comment not found") };
               case (?comment) {
-                // Only the comment author or an admin can delete
                 if (comment.author != caller and not AccessControl.isAdmin(accessControlState, caller)) {
                   Runtime.trap("Unauthorized: Only the comment author or an admin can delete this comment");
                 };
@@ -429,7 +457,6 @@ actor {
             switch (idx) {
               case (null) { Runtime.trap("Comment not found") };
               case (?index) {
-                // Only the comment author can update (not even admins should edit user comments)
                 if (existing[index].author != caller) {
                   Runtime.trap("Unauthorized: Only the comment author can update this comment");
                 };
@@ -452,7 +479,6 @@ actor {
   };
 
   public query ({ caller }) func getUserStats(user : Principal) : async UserStats {
-    // Anyone can view user statistics (public information on video platforms)
     let profile = switch (userProfiles.get(user)) {
       case (null) { Runtime.trap("User not found") };
       case (?p) { p };
@@ -467,4 +493,62 @@ actor {
       accountCreation = profile.accountCreation;
     };
   };
+
+  // Store custom thumbnail for a video
+  public shared ({ caller }) func setCustomThumbnail(videoId : Text, thumbnailBlob : Storage.ExternalBlob) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can set thumbnails");
+    };
+
+    let video = switch (videos.get(videoId)) {
+      case (null) { Runtime.trap("Video not found") };
+      case (?v) { v };
+    };
+
+    if (caller != video.uploader and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only the owner or an admin can set thumbnail");
+    };
+
+    let updatedVideo = { video with thumbnail = ?thumbnailBlob };
+    videos.add(videoId, updatedVideo);
+  };
+
+  // Mark thumbnail as auto-generated after successful frontend generation
+  public shared ({ caller }) func markThumbnailGenerated(videoId : Text, thumbnailBlob : Storage.ExternalBlob) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can mark thumbnails as generated");
+    };
+
+    let video = switch (videos.get(videoId)) {
+      case (null) { Runtime.trap("Video not found") };
+      case (?v) { v };
+    };
+
+    if (caller != video.uploader and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only the owner or an admin can mark thumbnail as generated.");
+    };
+
+    let updatedVideo = { video with thumbnail = ?thumbnailBlob };
+    videos.add(videoId, updatedVideo);
+  };
+
+  // Remove a custom thumbnail
+  public shared ({ caller }) func removeThumbnail(videoId : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can remove thumbnails");
+    };
+
+    let video = switch (videos.get(videoId)) {
+      case (null) { Runtime.trap("Video not found") };
+      case (?v) { v };
+    };
+
+    if (caller != video.uploader and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only the owner or an admin can remove thumbnail");
+    };
+
+    let updatedVideo = { video with thumbnail = null };
+    videos.add(videoId, updatedVideo);
+  };
 };
+

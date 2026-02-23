@@ -1,12 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix deployment error and ensure the application successfully deploys to the Internet Computer network.
+**Goal:** Create a comprehensive video player page with player, metadata, comments, and related videos.
 
 **Planned changes:**
-- Diagnose and resolve deployment failure when pushing code to the network
-- Fix backend migration logic to handle upgrades without data loss
-- Ensure all backend actor methods have proper type signatures matching the candid interface
-- Validate frontend actor integration code correctly references the deployed backend canister
+- Add large HTML5 video player at the top of the VideoPlayer page
+- Display video title in bold below the player
+- Add Subscribe button next to channel name
+- Add expandable/collapsible description box below video metadata
+- Add Comments Section at the bottom with text input for adding comments
+- Display Related Videos list on the right side in vertical format
 
-**User-visible outcome:** The application deploys successfully to the Internet Computer network with all existing data preserved, and users can interact with the platform without deployment-related errors.
+**User-visible outcome:** Users can click a video card to navigate to a full video player page where they can watch the video, read and expand the description, subscribe to the channel, read and post comments, and discover related videos in a sidebar.

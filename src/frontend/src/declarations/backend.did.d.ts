@@ -16,6 +16,19 @@ export interface Comment {
   'author' : Principal,
   'timestamp' : Time,
 }
+export interface ExtendedVideo {
+  'title' : string,
+  'likeCount' : bigint,
+  'thumbnail' : [] | [ExternalBlob],
+  'file' : ExternalBlob,
+  'tags' : Array<string>,
+  'description' : string,
+  'viewCount' : bigint,
+  'commentCount' : bigint,
+  'uploader' : Principal,
+  'uploadTime' : Time,
+}
+export type ExternalBlob = Uint8Array;
 export interface Photo {
   'title' : string,
   'file' : Uint8Array,
@@ -44,20 +57,14 @@ export interface UserStats {
   'accountCreation' : Time,
   'totalPhotosUploaded' : bigint,
 }
-export interface Video {
-  'title' : string,
-  'likeCount' : bigint,
-  'file' : Uint8Array,
-  'description' : string,
-  'commentCount' : bigint,
-  'uploader' : Principal,
-  'uploadTime' : Time,
-}
 export interface VideoMetadata {
   'id' : string,
   'title' : string,
   'likeCount' : bigint,
+  'thumbnail' : [] | [ExternalBlob],
+  'tags' : Array<string>,
   'description' : string,
+  'viewCount' : bigint,
   'commentCount' : bigint,
   'uploader' : Principal,
   'uploadTime' : Time,
@@ -110,19 +117,30 @@ export interface _SERVICE {
   'getPhoto' : ActorMethod<[string], Photo>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getUserStats' : ActorMethod<[Principal], UserStats>,
-  'getVideo' : ActorMethod<[string], Video>,
+  'getVideo' : ActorMethod<[string], ExtendedVideo>,
+  'getVideoMetadata' : ActorMethod<[string], VideoMetadata>,
+  'incrementVideoViewCount' : ActorMethod<[string], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'likeVideo' : ActorMethod<[string], undefined>,
   'listPhotos' : ActorMethod<[], Array<PhotoMetadata>>,
   'listVideos' : ActorMethod<[], Array<VideoMetadata>>,
+  'markThumbnailGenerated' : ActorMethod<[string, ExternalBlob], undefined>,
+  'removeThumbnail' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchVideos' : ActorMethod<[string], Array<VideoMetadata>>,
   'setChannelName' : ActorMethod<[string], undefined>,
+  'setCustomThumbnail' : ActorMethod<[string, ExternalBlob], undefined>,
   'updateComment' : ActorMethod<[string, bigint, string], undefined>,
   'updatePhoto' : ActorMethod<[string, string, string], undefined>,
-  'updateVideo' : ActorMethod<[string, string, string], undefined>,
+  'updateVideo' : ActorMethod<
+    [string, string, string, Array<string>],
+    undefined
+  >,
   'uploadPhoto' : ActorMethod<[string, string, Uint8Array], string>,
-  'uploadVideo' : ActorMethod<[string, string, Uint8Array], string>,
+  'uploadVideo' : ActorMethod<
+    [string, string, Array<string>, ExternalBlob],
+    string
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

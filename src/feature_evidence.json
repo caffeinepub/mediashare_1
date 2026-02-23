@@ -2,18 +2,71 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-validate-that-frontend-imports-and-actor-integration-code-correctly-reference-the-deployed-backend-canister",
-      "featureTitle": "Validate that frontend imports and actor integration code correctly reference the deployed backend canister",
+      "featureId": "feature-update-videoplayer-page-to-display-a-large-html5-video-player-at-the-top-of-the-page-when-a-video-card-is-clicked",
+      "featureTitle": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
       "files": [
-        "frontend/src/components/PhotoCard.tsx",
-        "frontend/src/components/VideoCard.tsx",
-        "frontend/src/hooks/usePhoto.ts",
-        "frontend/src/hooks/usePhotoUpload.ts",
-        "frontend/src/hooks/usePhotos.ts",
-        "frontend/src/hooks/useVideo.ts",
-        "frontend/src/hooks/useVideoUpload.ts",
-        "frontend/src/hooks/useVideos.ts",
-        "frontend/src/pages/PhotoViewer.tsx",
+        "frontend/src/pages/VideoPlayer.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-display-video-title-in-bold-below-the-video-player",
+      "featureTitle": "Display video title in bold below the video player",
+      "files": [
+        "frontend/src/pages/VideoPlayer.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-subscribe-button-next-to-the-channel-name-below-the-video-player",
+      "featureTitle": "Add a Subscribe button next to the channel name below the video player",
+      "files": [
+        "frontend/src/hooks/useSubscribe.ts",
+        "frontend/src/hooks/useSubscriptionStatus.ts",
+        "frontend/src/pages/VideoPlayer.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-expandable-description-box-below-the-video-metadata-that-can-be-collapsed-and-expanded",
+      "featureTitle": "Add an expandable description box below the video metadata that can be collapsed and expanded",
+      "files": [
         "frontend/src/pages/VideoPlayer.tsx"
       ],
       "components": [
@@ -27,6 +80,47 @@
       ],
       "testIds": [
         "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-comments-section-at-the-bottom-of-the-video-player-page-with-a-text-input-for-add-a-comment",
+      "featureTitle": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+      "files": [
+        "frontend/src/pages/VideoPlayer.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-display-a-list-of-related-videos-on-the-right-side-of-the-video-player-in-a-smaller-vertical-list-format",
+      "featureTitle": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
+      "files": [
+        "frontend/src/components/VideoCard.tsx",
+        "frontend/src/pages/VideoPlayer.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }

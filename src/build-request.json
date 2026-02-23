@@ -1,81 +1,134 @@
 {
   "kind": "build_request",
-  "title": "Fix deployment error",
-  "priority": "high",
+  "title": "Create video player page with player, metadata, comments, and related videos",
+  "projectName": "YouTube Clone",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Diagnose and resolve the deployment failure that occurred when pushing code to the network",
-      "target": "both",
+      "text": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-deployment-error"
+          "msg-4"
         ],
         "quotes": [
-          "Deployment unsuccessful"
+          "navigate to a view that features a large HTML5 Video Player"
         ]
       },
       "acceptanceCriteria": [
-        "The application successfully deploys to the Internet Computer network",
-        "All canisters initialize without errors",
-        "The deployment completes without throwing errors"
+        "Video player is prominently displayed at the top of the page",
+        "Player uses HTML5 video element",
+        "Video plays when user clicks on a video card from the homepage"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Verify backend migration logic properly handles the upgrade from existing state to new state without data loss",
-      "target": "backend",
+      "text": "Display video title in bold below the video player",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-deployment-error"
+          "msg-4"
+        ],
+        "quotes": [
+          "add the video title (bold)"
         ]
       },
       "acceptanceCriteria": [
-        "Migration module correctly transforms old state to new state",
-        "All existing user data, videos, photos, playlists, and comments are preserved during upgrade",
-        "No runtime errors occur during canister upgrade process"
+        "Video title is displayed below the player",
+        "Title text is bold",
+        "Title matches the video metadata"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Ensure all backend actor methods have proper type signatures and return values matching the candid interface",
-      "target": "backend",
+      "text": "Add a Subscribe button next to the channel name below the video player",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-deployment-error"
+          "msg-4"
+        ],
+        "quotes": [
+          "a 'Subscribe' button next to the channel name"
         ]
       },
       "acceptanceCriteria": [
-        "All public methods in main.mo match the expected candid interface",
-        "No type mismatches between Motoko implementation and candid definitions",
-        "Backend compiles without warnings or errors"
+        "Subscribe button appears next to the channel name",
+        "Button is visually distinct and clickable",
+        "Backend tracks subscription relationships between users and channels",
+        "Button shows subscribed state if user is already subscribed"
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Validate that frontend imports and actor integration code correctly reference the deployed backend canister",
+      "text": "Add an expandable description box below the video metadata that can be collapsed and expanded",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-deployment-error"
+          "msg-4"
+        ],
+        "quotes": [
+          "a description box that can expand"
         ]
       },
       "acceptanceCriteria": [
-        "Frontend successfully connects to the backend actor after deployment",
-        "All API calls from hooks properly resolve to backend methods",
-        "No console errors related to actor initialization or canister communication"
+        "Description box is initially collapsed or truncated",
+        "User can click to expand the full description",
+        "User can collapse the description after expanding",
+        "Description content matches video metadata"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Add a Comments Section at the bottom with a text input for 'Add a comment'"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Comments section is positioned at the bottom of the page",
+        "Text input field is labeled 'Add a comment'",
+        "Existing comments are displayed above the input",
+        "New comments appear after submission"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "show a list of 'Related Videos' in a smaller vertical list format"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Related videos list appears on the right side of the player",
+        "Videos are displayed in a vertical list format",
+        "Video cards are smaller than the main homepage grid cards",
+        "Clicking a related video navigates to that video's player page",
+        "List shows at least 5-10 related videos"
       ]
     }
   ],
   "constraints": [
-    "Must preserve all existing user data during migration",
-    "Must maintain compatibility with Internet Identity authentication",
-    "Must not modify immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui"
+    "Use existing CommentSection component for comments functionality",
+    "Maintain existing VideoPlayer page structure and routing from frontend/src/pages/VideoPlayer.tsx",
+    "Keep existing video metadata fetching logic using useVideo hook",
+    "Preserve dark mode theme with red accent colors"
   ],
   "nonGoals": [
-    "Adding new features or functionality",
-    "Refactoring existing working code",
-    "Changing the UI design or styling"
+    "Video recommendation algorithm (use simple related videos logic like same uploader or recent videos)",
+    "Advanced video player controls beyond HTML5 defaults",
+    "Playlist functionality",
+    "Video sharing or embedding features"
   ],
   "imageRequirements": {
     "required": [],

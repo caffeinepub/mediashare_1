@@ -1,95 +1,98 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-22T13:14:54.743Z",
+  "generatedAt": "2026-02-23T07:16:31.321Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 1,
+    "total": 6,
+    "implemented": 6,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Diagnose and resolve the deployment failure that occurred when pushing code to the network",
-        "status": "missing",
+        "summary": "Update VideoPlayer page to display a large HTML5 video player at the top of the page when a video card is clicked",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useActor.ts",
-          "frontend/src/main.tsx"
+          "frontend/src/pages/VideoPlayer.tsx"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/pages/VideoPlayer.tsx"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "Verify backend migration logic properly handles the upgrade from existing state to new state without data loss",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Display video title in bold below the video player",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/VideoPlayer.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/VideoPlayer.tsx"
+        ]
       },
       {
         "id": "REQ-3",
-        "summary": "Ensure all backend actor methods have proper type signatures and return values matching the candid interface",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Add a Subscribe button next to the channel name below the video player",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/VideoPlayer.tsx",
+          "frontend/src/hooks/useSubscribe.ts",
+          "frontend/src/hooks/useSubscriptionStatus.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/VideoPlayer.tsx",
+          "frontend/src/hooks/useSubscribe.ts",
+          "frontend/src/hooks/useSubscriptionStatus.ts"
+        ]
       },
       {
         "id": "REQ-4",
-        "summary": "Validate that frontend imports and actor integration code correctly reference the deployed backend canister",
+        "summary": "Add an expandable description box below the video metadata that can be collapsed and expanded",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/backend.d.ts",
-          "frontend/src/hooks/useVideoUpload.ts",
-          "frontend/src/hooks/usePhotoUpload.ts",
-          "frontend/src/hooks/useVideo.ts",
-          "frontend/src/hooks/usePhoto.ts",
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/pages/PhotoViewer.tsx",
-          "frontend/src/components/VideoCard.tsx",
-          "frontend/src/components/PhotoCard.tsx",
-          "frontend/src/hooks/useVideos.ts",
-          "frontend/src/hooks/usePhotos.ts"
+          "frontend/src/pages/VideoPlayer.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/backend.d.ts",
-          "frontend/src/hooks/useVideoUpload.ts",
-          "frontend/src/hooks/usePhotoUpload.ts",
-          "frontend/src/hooks/useVideo.ts",
-          "frontend/src/hooks/usePhoto.ts",
+          "frontend/src/pages/VideoPlayer.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Add a Comments Section at the bottom of the video player page with a text input for 'Add a comment'",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/VideoPlayer.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/VideoPlayer.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Display a list of Related Videos on the right side of the video player in a smaller vertical list format",
+        "status": "implemented",
+        "plannedFiles": [
           "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/pages/PhotoViewer.tsx",
-          "frontend/src/components/VideoCard.tsx",
-          "frontend/src/components/PhotoCard.tsx",
-          "frontend/src/hooks/useVideos.ts",
-          "frontend/src/hooks/usePhotos.ts"
+          "frontend/src/components/VideoCard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/VideoPlayer.tsx",
+          "frontend/src/components/VideoCard.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/PhotoCard.tsx",
     "frontend/src/components/VideoCard.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/usePhoto.ts",
-    "frontend/src/hooks/usePhotoUpload.ts",
-    "frontend/src/hooks/usePhotos.ts",
-    "frontend/src/hooks/useVideo.ts",
-    "frontend/src/hooks/useVideoUpload.ts",
-    "frontend/src/hooks/useVideos.ts",
-    "frontend/src/pages/ChannelProfile.tsx",
-    "frontend/src/pages/PhotoGallery.tsx",
-    "frontend/src/pages/PhotoViewer.tsx",
+    "frontend/src/hooks/useSubscribe.ts",
+    "frontend/src/hooks/useSubscriptionStatus.ts",
     "frontend/src/pages/VideoPlayer.tsx",
     "project_state.json",
     "scratch/component-selection.json",

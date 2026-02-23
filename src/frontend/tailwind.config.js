@@ -49,13 +49,6 @@ export default {
                     DEFAULT: 'oklch(var(--card))',
                     foreground: 'oklch(var(--card-foreground))'
                 },
-                chart: {
-                    1: 'oklch(var(--chart-1))',
-                    2: 'oklch(var(--chart-2))',
-                    3: 'oklch(var(--chart-3))',
-                    4: 'oklch(var(--chart-4))',
-                    5: 'oklch(var(--chart-5))'
-                },
                 sidebar: {
                     DEFAULT: 'oklch(var(--sidebar))',
                     foreground: 'oklch(var(--sidebar-foreground))',
@@ -65,6 +58,13 @@ export default {
                     'accent-foreground': 'oklch(var(--sidebar-accent-foreground))',
                     border: 'oklch(var(--sidebar-border))',
                     ring: 'oklch(var(--sidebar-ring))'
+                },
+                chart: {
+                    1: 'oklch(var(--chart-1))',
+                    2: 'oklch(var(--chart-2))',
+                    3: 'oklch(var(--chart-3))',
+                    4: 'oklch(var(--chart-4))',
+                    5: 'oklch(var(--chart-5))'
                 }
             },
             borderRadius: {
@@ -72,28 +72,35 @@ export default {
                 md: 'calc(var(--radius) - 2px)',
                 sm: 'calc(var(--radius) - 4px)'
             },
-            boxShadow: {
-                xs: '0 1px 2px 0 rgba(0,0,0,0.05)'
-            },
             fontFamily: {
                 sans: [
                     'Inter',
                     'system-ui',
                     '-apple-system',
                     'BlinkMacSystemFont',
-                    'Segoe UI',
+                    '"Segoe UI"',
                     'Roboto',
+                    '"Helvetica Neue"',
+                    'Arial',
                     'sans-serif'
                 ]
             },
             keyframes: {
                 'accordion-down': {
-                    from: { height: '0' },
-                    to: { height: 'var(--radix-accordion-content-height)' }
+                    from: {
+                        height: '0'
+                    },
+                    to: {
+                        height: 'var(--radix-accordion-content-height)'
+                    }
                 },
                 'accordion-up': {
-                    from: { height: 'var(--radix-accordion-content-height)' },
-                    to: { height: '0' }
+                    from: {
+                        height: 'var(--radix-accordion-content-height)'
+                    },
+                    to: {
+                        height: '0'
+                    }
                 }
             },
             animation: {
