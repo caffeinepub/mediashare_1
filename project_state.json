@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "YouTube-like video platform with Home, Upload, Shorts, and Subscription tabs with bigger buttons, real view counts, and a Profile section showing channel/profile info. Views should only increment when a user actually watches a video.",
+  "architectural_notes": [],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-add-a-profile-tab-to-the-bottom-navigation-bar-alongside-home-upload-shorts-subscriptions-that-navigates-to-the-authenticated-user-s-own-profile-page",
+      "title": "Add a Profile tab to the bottom navigation bar (alongside Home, Upload, Shorts, Subscriptions) that navigates to the authenticated user's own profile page.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-dedicated-user-profile-page-that-displays-the-authenticated-user-s-profile-information-display-name-channel-name-principal-id-and-channel-statistics-total-videos-uploaded-total-views-total-likes-received-along-with-a-grid-of-the-user-s-uploaded-videos-and-photos",
+      "title": "Create a dedicated User Profile page that displays the authenticated user's profile information (display name, channel name, principal ID) and channel statistics (total videos uploaded, total views, total likes received), along with a grid of the user's uploaded videos and photos.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-profile-route-to-the-router-that-renders-the-new-user-profile-page-for-the-currently-authenticated-user",
+      "title": "Add a '/profile' route to the router that renders the new User Profile page for the currently authenticated user.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-video-view-counts-increment-only-when-an-authenticated-user-has-actively-watched-the-video-the-view-count-increment-must-be-triggered-after-a-minimum-watch-threshold-e-g-at-least-5-seconds-of-playback-not-on-page-load-or-when-the-video-is-merely-loaded-in-the-dom",
+      "title": "Ensure video view counts increment only when an authenticated user has actively watched the video — the view count increment must be triggered after a minimum watch threshold (e.g., at least 5 seconds of playback), not on page load or when the video is merely loaded in the DOM.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Add Profile section showing channel and profile information",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Video view counts should only increment when a user actually watches the video (not on page load or bot visits)",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "MediaShare",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

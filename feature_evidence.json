@@ -1,0 +1,85 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-add-a-profile-tab-to-the-bottom-navigation-bar-alongside-home-upload-shorts-subscriptions-that-navigates-to-the-authenticated-user-s-own-profile-page",
+      "featureTitle": "Add a Profile tab to the bottom navigation bar (alongside Home, Upload, Shorts, Subscriptions) that navigates to the authenticated user's own profile page.",
+      "files": [
+        "frontend/src/components/BottomNav.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-a-dedicated-user-profile-page-that-displays-the-authenticated-user-s-profile-information-display-name-channel-name-principal-id-and-channel-statistics-total-videos-uploaded-total-views-total-likes-received-along-with-a-grid-of-the-user-s-uploaded-videos-and-photos",
+      "featureTitle": "Create a dedicated User Profile page that displays the authenticated user's profile information (display name, channel name, principal ID) and channel statistics (total videos uploaded, total views, total likes received), along with a grid of the user's uploaded videos and photos.",
+      "files": [
+        "frontend/src/pages/Profile.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-profile-route-to-the-router-that-renders-the-new-user-profile-page-for-the-currently-authenticated-user",
+      "featureTitle": "Add a '/profile' route to the router that renders the new User Profile page for the currently authenticated user.",
+      "files": [
+        "frontend/src/App.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-video-view-counts-increment-only-when-an-authenticated-user-has-actively-watched-the-video-the-view-count-increment-must-be-triggered-after-a-minimum-watch-threshold-e-g-at-least-5-seconds-of-playback-not-on-page-load-or-when-the-video-is-merely-loaded-in-the-dom",
+      "featureTitle": "Ensure video view counts increment only when an authenticated user has actively watched the video — the view count increment must be triggered after a minimum watch threshold (e.g., at least 5 seconds of playback), not on page load or when the video is merely loaded in the DOM.",
+      "files": [
+        "frontend/src/pages/VideoPlayer.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    }
+  ]
+}
