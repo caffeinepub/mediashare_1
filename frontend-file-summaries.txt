@@ -2,8 +2,8 @@
   "frontend/src/App.tsx": "Main application router using TanStack Router; updated to use default import for ChannelProfile.",
   "frontend/src/components/Layout.tsx": "Main layout component with sticky header, collapsible sidebar, AdSenseScript injection, a desktop sidebar ad unit (xl breakpoint), and footer with attribution.",
   "frontend/src/components/AuthButton.tsx": "Thin wrapper around ProfileDropdownMenu for placement in the header — renders a single profile icon button that opens the unified dropdown.",
-  "frontend/src/pages/Home.tsx": "Homepage displaying videos in a responsive YouTube-style grid layout (1-5 columns based on screen size) sorted by upload time in descending order (newest first) with loading states and empty state messaging.",
-  "frontend/src/pages/VideoGallery.tsx": "Video gallery page with debounced search functionality that filters videos by title and description using backend search method.",
+  "frontend/src/pages/Home.tsx": "Homepage displaying videos in a responsive YouTube-style grid layout sorted newest-first, now with the DataRestorationBanner rendered at the top above the video grid.",
+  "frontend/src/pages/VideoGallery.tsx": "Video gallery page with debounced search functionality, now with the DataRestorationBanner rendered at the top above the search input and video grid.",
   "frontend/src/pages/PhotoGallery.tsx": "Photo gallery page with debounced client-side search functionality that filters photos by title and description, using Tailwind CSS v3 classes.",
   "frontend/src/pages/UploadVideo.tsx": "Video upload page that handles the upload flow returning a string videoId, builds a minimal ExtendedVideo for ThumbnailSelector, and treats error as a plain string.",
   "frontend/src/pages/UploadPhoto.tsx": "Photo upload page with file selection, image preview, title/description inputs, and progress tracking; fixed error display to use `error` (a string) directly instead of `error.message`.",
@@ -93,5 +93,6 @@
   "frontend/src/hooks/useAdSenseConfig.ts": "Two React Query hooks — `useGetAdSensePublisherId` (query) fetches the stored AdSense publisher ID, and `useSetAdSensePublisherId` (mutation) saves a new publisher ID with toast notifications and query invalidation.",
   "frontend/src/components/AdSenseScript.tsx": "Invisible component that dynamically injects the Google AdSense script tag into the document head when a publisher ID is configured, ensuring it is only injected once.",
   "frontend/src/components/AdSenseUnit.tsx": "Reusable AdSense ad unit component using `(window as any).adsbygoogle` to avoid TypeScript type conflicts, renders ins.adsbygoogle element and calls push({}) on mount when publisher ID is configured.",
-  "frontend/src/lib/types.ts": "Local frontend type definitions for VideoMetadata, ExtendedVideo, Photo, PhotoMetadata, Comment, UserStats, and SubscriptionStatus that mirror backend structures not exported from backend.d.ts."
+  "frontend/src/lib/types.ts": "Local frontend type definitions for VideoMetadata, ExtendedVideo, Photo, PhotoMetadata, Comment, UserStats, and SubscriptionStatus that mirror backend structures not exported from backend.d.ts.",
+  "frontend/src/components/DataRestorationBanner.tsx": "Dismissible amber alert banner that informs users about the video restoration issue after the Version 35 update; dismissal state is persisted in localStorage so it only shows once per browser."
 }

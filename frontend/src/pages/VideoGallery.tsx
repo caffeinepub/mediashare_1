@@ -5,6 +5,7 @@ import { Loader2, Video, Search } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
+import { DataRestorationBanner } from '../components/DataRestorationBanner';
 
 export function VideoGallery() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,7 +50,9 @@ export function VideoGallery() {
 
   return (
     <div className="container py-8">
-      <div className="mb-8">
+      <DataRestorationBanner />
+
+      <div className="mb-8 mt-4">
         <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
           <Video className="w-8 h-8 text-chart-1" />
           Video Gallery

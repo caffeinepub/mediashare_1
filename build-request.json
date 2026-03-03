@@ -1,121 +1,70 @@
 {
   "kind": "build_request",
-  "title": "Integrate Razorpay (INR payments) and Google AdSense (real ad revenue)",
-  "projectName": "Media Share",
-  "priority": "normal",
+  "title": "Restore lost video data and fix data persistence after upgrade deploy",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add Razorpay payment gateway integration to the backend to support INR-based premium subscriptions for Indian users. Store Razorpay key ID and secret in canister state (similar to existing Stripe config). Expose backend methods: setRazorpayConfiguration(keyId, keySecret), isRazorpayConfigured(), createRazorpayOrder(amount in paise, currency 'INR'), and verifyRazorpayPayment(orderId, paymentId, signature) that validates the HMAC-SHA256 signature and upgrades the caller's subscription to premium on success.",
+      "text": "Investigate and fix the data loss issue in the backend where all previously uploaded videos were deleted/lost after deploying Version 35. Ensure the stable variable declarations and upgrade/downgrade hooks in main.mo correctly preserve video metadata and associated data (comments, likes, ratings, view counts, thumbnails) across canister upgrades.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-6"
         ],
         "quotes": [
-          "C"
+          "Lagta h tumne kuch mistake kar di h upload hui sari video delete ho gai h"
         ]
       },
       "acceptanceCriteria": [
-        "Razorpay key ID and secret can be stored and retrieved from canister state",
-        "isRazorpayConfigured() returns true only when both key ID and secret are set",
-        "createRazorpayOrder() returns an order ID that can be used on the frontend",
-        "verifyRazorpayPayment() validates the payment signature and upgrades subscription to premium on success",
-        "Existing Stripe integration remains unaffected"
+        "All video metadata persisted before Version 35 deploy is restored or recoverable",
+        "Canister upgrade (reinstall/upgrade) does not wipe the videos stable variable",
+        "After a subsequent deploy, existing uploaded videos remain visible on the Home and Video Gallery pages",
+        "Comments, likes, ratings, and view counts associated with videos are also preserved across upgrades"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add a Razorpay setup modal component (similar to the existing StripeSetupModal) that allows the admin/owner to enter their Razorpay Key ID and Key Secret. Wire it into the Settings page with a dedicated 'Razorpay Setup' button visible only to authenticated users. Add corresponding useRazorpayConfig and useSetRazorpayConfiguration hooks mirroring the existing useStripeConfig pattern.",
-      "target": "frontend",
+      "text": "Audit and fix the migration.mo upgrade logic to ensure it does not accidentally reset or drop the videos, photos, comments, likes, ratings, or any other stable state when migrating from the old schema to the new schema (adding razorpayConfig and adSenseConfig fields). The migration must only add new fields and must not touch existing collections.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-6"
         ],
         "quotes": [
-          "C"
+          "upload hui sari video delete ho gai h"
         ]
       },
       "acceptanceCriteria": [
-        "A 'Razorpay Setup' button appears in the Settings page for authenticated users",
-        "Clicking it opens a modal with fields for Key ID and Key Secret",
-        "Submitting the form calls the backend setRazorpayConfiguration method",
-        "A success toast is shown on save",
-        "useRazorpayConfig hook correctly reflects whether Razorpay is configured"
+        "migration.mo only adds razorpayConfig and adSenseConfig to the state without modifying videos, photos, comments, or other collections",
+        "Running the migration on a canister with existing data leaves all existing videos intact",
+        "No stable variable is re-initialized to an empty value during the upgrade path"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Update the Upgrade page (frontend/src/pages/Upgrade.tsx) to display a Razorpay payment option for INR (₹) alongside the existing Stripe option. When the user selects Razorpay checkout, call the backend to create a Razorpay order, load the Razorpay JS SDK (https://checkout.razorpay.com/v1/checkout.js) dynamically, open the Razorpay checkout modal, and on successful payment call the backend verifyRazorpayPayment method. On verified success, redirect to the existing PaymentSuccess page. On failure, redirect to PaymentFailure page.",
+      "text": "Display a user-facing notice on the Home page and Video Gallery page informing users that a technical issue occurred during the latest update and that video restoration is in progress, to be removed once data is confirmed restored.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "C"
+          "msg-6"
         ]
       },
       "acceptanceCriteria": [
-        "Upgrade page shows a Razorpay payment button labeled with INR pricing (e.g., ₹499/month)",
-        "Razorpay checkout modal opens with correct order details",
-        "On payment success the signature is verified via backend before redirecting to PaymentSuccess",
-        "On payment failure or dismissal the user is redirected to PaymentFailure page",
-        "Razorpay option is only shown when isRazorpayConfigured() returns true"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Add Google AdSense integration support to the app. Add a backend method setAdSensePublisherId(publisherId: Text) to store the AdSense publisher ID (ca-pub-XXXXXXXX) in canister state, and getAdSensePublisherId() to retrieve it. The publisher ID should be included in a metadata endpoint or accessible from the frontend configuration.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "C"
-        ]
-      },
-      "acceptanceCriteria": [
-        "setAdSensePublisherId() stores the publisher ID in stable canister state",
-        "getAdSensePublisherId() returns the stored publisher ID",
-        "Publisher ID persists across canister upgrades"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Add an AdSense configuration section to the Settings page where the authenticated user can enter and save their Google AdSense Publisher ID (ca-pub-XXXXXXXX). Add a useAdSenseConfig hook to read and update the publisher ID. Dynamically inject the Google AdSense script tag (<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX'>) into the page head when a publisher ID is configured. Add AdSense ad unit placeholders (ins.adsbygoogle) in appropriate locations: below the video player in VideoPlayer.tsx and in the sidebar area in Layout.tsx.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "C"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Settings page has an 'AdSense Configuration' section with a Publisher ID input field",
-        "Saving the publisher ID calls the backend setAdSensePublisherId method",
-        "When a publisher ID is configured, the AdSense script is injected into the document head",
-        "Ad unit placeholders (ins.adsbygoogle) are rendered below the video player",
-        "Ad unit placeholders are rendered in a sidebar slot in the main layout",
-        "adsbygoogle.push({}) is called after each ad unit renders"
+        "A dismissible banner or alert is shown at the top of the Home page and Video Gallery page",
+        "The banner communicates clearly that a technical issue may have affected video visibility",
+        "The banner is easy to remove from the codebase once the issue is resolved"
       ]
     }
   ],
   "constraints": [
-    "Do not remove or break existing Stripe subscription integration",
-    "Do not modify files in frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "Razorpay JS SDK must be loaded dynamically at checkout time, not bundled",
-    "AdSense publisher ID must be stored in stable canister state so it survives upgrades"
+    "Do not wipe or reset any stable variables during the fix — the goal is data preservation, not a fresh start",
+    "Migration logic must be additive only; no existing state fields may be dropped or re-initialized",
+    "All Motoko logic must remain in the single main actor (backend/main.mo)"
   ],
   "nonGoals": [
-    "Removing or replacing Stripe — both Stripe and Razorpay should coexist",
-    "Automatic ad placement optimization or A/B testing",
-    "Real-time revenue analytics from AdSense (only integration/script injection is in scope)",
-    "SMS or email notifications for payment events",
-    "Razorpay subscriptions/recurring billing (one-time premium upgrade only)"
+    "Adding new video upload features",
+    "Changing Razorpay or AdSense integration logic",
+    "UI redesign or theme changes"
   ],
   "imageRequirements": {
     "required": [],

@@ -14,9 +14,7 @@ import Storage "blob-storage/Storage";
 import MixinAuthorization "authorization/MixinAuthorization";
 import Stripe "stripe/stripe";
 import AccessControl "authorization/access-control";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   // Initialize the access control system on canister instantiation
   let accessControlState = AccessControl.initState();
@@ -184,7 +182,7 @@ actor {
     razorpayConfig != null;
   };
 
-  public query func getRazorpayConfig() : async ?RazorpayConfig {
+  public query ({ caller }) func getRazorpayConfig() : async ?RazorpayConfig {
     razorpayConfig;
   };
 
@@ -231,4 +229,3 @@ actor {
     userProfiles.add(caller, newProfile);
   };
 };
-

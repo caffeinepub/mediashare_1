@@ -1,15 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Integrate Razorpay (INR payments) and Google AdSense into the Media Share app alongside the existing Stripe integration.
+**Goal:** Fix data loss caused by a canister upgrade (Version 35) that wiped previously uploaded videos and associated data, and restore data persistence across future upgrades.
 
 **Planned changes:**
-- Add backend methods to store and retrieve Razorpay Key ID and Secret, create Razorpay orders, and verify payment signatures (HMAC-SHA256); upgrade caller's subscription to premium on verified payment
-- Add backend methods to store and retrieve a Google AdSense Publisher ID in stable canister state
-- Add a `RazorpaySetupModal` component and `useRazorpayConfig` / `useSetRazorpayConfiguration` hooks; add a "Razorpay Setup" button in the Settings page for authenticated users
-- Update the Upgrade page to show a Razorpay payment option (₹499/month) when Razorpay is configured; dynamically load the Razorpay JS SDK at checkout, open the checkout modal, verify payment via backend, and redirect to PaymentSuccess or PaymentFailure accordingly
-- Add an "AdSense Configuration" section to the Settings page with a Publisher ID input and `useAdSenseConfig` hook
-- Dynamically inject the Google AdSense `<script>` tag into the document head when a publisher ID is configured
-- Add AdSense ad unit placeholders (`ins.adsbygoogle`) below the video player in `VideoPlayer.tsx` and in the sidebar slot in `Layout.tsx`
+- Audit and fix `main.mo` stable variable declarations and `preupgrade`/`postupgrade` hooks to ensure videos, comments, likes, ratings, view counts, and thumbnails are preserved across canister upgrades
+- Audit and fix migration logic to ensure it only adds new fields (`razorpayConfig`, `adSenseConfig`) without resetting or dropping any existing stable collections (videos, photos, comments, likes, ratings, etc.)
+- Add a dismissible banner on the Home page and Video Gallery page informing users that a technical issue occurred during the latest update and that video restoration is in progress
 
-**User-visible outcome:** Authenticated users in India can upgrade to premium via Razorpay (INR). Admins can configure Razorpay credentials and a Google AdSense Publisher ID from the Settings page, and AdSense ads will appear below the video player and in the sidebar when configured.
+**User-visible outcome:** Existing uploaded videos remain visible after deploys, and users on the Home and Video Gallery pages see a clear notice about the temporary technical issue with video visibility.

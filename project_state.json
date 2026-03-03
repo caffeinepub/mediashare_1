@@ -1,35 +1,18 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "A content platform app with subscription and ad revenue features. User wants both Razorpay (INR payments for India) integration and Google AdSense integration for real monetization.",
-  "architectural_notes": [
-    "Use Razorpay as payment gateway for India (supports UPI, Cards, NetBanking in INR)",
-    "Display all revenue/pricing in Indian Rupees (INR) for India market"
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Uploaded videos were deleted after deploying Version 35 — possible data loss bug introduced in latest deploy"
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-add-a-razorpay-setup-modal-component-similar-to-the-existing-stripesetupmodal-that-allows-the-admin-owner-to-enter-their-razorpay-key-id-and-key-secret-wire-it-into-the-settings-page-with-a-dedicated-razorpay-setup-button-visible-only-to-authenticated-users-add-corresponding-userazorpayconfig-and-usesetrazorpayconfiguration-hooks-mirroring-the-existing-usestripeconfig-pattern",
-      "title": "Add a Razorpay setup modal component (similar to the existing StripeSetupModal) that allows the admin/owner to enter their Razorpay Key ID and Key Secret. Wire it into the Settings page with a dedicated 'Razorpay Setup' button visible only to authenticated users. Add corresponding useRazorpayConfig and useSetRazorpayConfiguration hooks mirroring the existing useStripeConfig pattern.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-upgrade-page-frontend-src-pages-upgrade-tsx-to-display-a-razorpay-payment-option-for-inr-alongside-the-existing-stripe-option-when-the-user-selects-razorpay-checkout-call-the-backend-to-create-a-razorpay-order-load-the-razorpay-js-sdk-https-checkout-razorpay-com-v1-checkout-js-dynamically-open-the-razorpay-checkout-modal-and-on-successful-payment-call-the-backend-verifyrazorpaypayment-method-on-verified-success-redirect-to-the-existing-paymentsuccess-page-on-failure-redirect-to-paymentfailure-page",
-      "title": "Update the Upgrade page (frontend/src/pages/Upgrade.tsx) to display a Razorpay payment option for INR (₹) alongside the existing Stripe option. When the user selects Razorpay checkout, call the backend to create a Razorpay order, load the Razorpay JS SDK (https://checkout.razorpay.com/v1/checkout.js) dynamically, open the Razorpay checkout modal, and on successful payment call the backend verifyRazorpayPayment method. On verified success, redirect to the existing PaymentSuccess page. On failure, redirect to PaymentFailure page.",
+      "id": "feature-display-a-user-facing-notice-on-the-home-page-and-video-gallery-page-informing-users-that-a-technical-issue-occurred-during-the-latest-update-and-that-video-restoration-is-in-progress-to-be-removed-once-data-is-confirmed-restored",
+      "title": "Display a user-facing notice on the Home page and Video Gallery page informing users that a technical issue occurred during the latest update and that video restoration is in progress, to be removed once data is confirmed restored.",
       "reqIds": [
         "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-adsense-configuration-section-to-the-settings-page-where-the-authenticated-user-can-enter-and-save-their-google-adsense-publisher-id-ca-pub-xxxxxxxx-add-a-useadsenseconfig-hook-to-read-and-update-the-publisher-id-dynamically-inject-the-google-adsense-script-tag-script-async-src-https-pagead2-googlesyndication-com-pagead-js-adsbygoogle-js-client-ca-pub-xxxx-into-the-page-head-when-a-publisher-id-is-configured-add-adsense-ad-unit-placeholders-ins-adsbygoogle-in-appropriate-locations-below-the-video-player-in-videoplayer-tsx-and-in-the-sidebar-area-in-layout-tsx",
-      "title": "Add an AdSense configuration section to the Settings page where the authenticated user can enter and save their Google AdSense Publisher ID (ca-pub-XXXXXXXX). Add a useAdSenseConfig hook to read and update the publisher ID. Dynamically inject the Google AdSense script tag (<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX'>) into the page head when a publisher ID is configured. Add AdSense ad unit placeholders (ins.adsbygoogle) in appropriate locations: below the video player in VideoPlayer.tsx and in the sidebar area in Layout.tsx.",
-      "reqIds": [
-        "REQ-5"
       ],
       "version": 1
     }
@@ -37,35 +20,22 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Integrate Razorpay for INR payments and subscriptions in India",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Integrate Google AdSense for real ad revenue",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add Razorpay payment gateway integration to the backend to support INR-based premium subscriptions for Indian users. Store Razorpay key ID and secret in canister state (similar to existing Stripe config). Expose backend methods: setRazorpayConfiguration(keyId, keySecret), isRazorpayConfigured(), createRazorpayOrder(amount in paise, currency 'INR'), and verifyRazorpayPayment(orderId, paymentId, signature) that validates the HMAC-SHA256 signature and upgrades the caller's subscription to premium on success.",
+      "summary": "Investigate and fix the data loss issue in the backend where all previously uploaded videos were deleted/lost after deploying Version 35. Ensure the stable variable declarations and upgrade/downgrade hooks in main.mo correctly preserve video metadata and associated data (comments, likes, ratings, view counts, thumbnails) across canister upgrades.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-6",
-      "summary": "Add Google AdSense integration support to the app. Add a backend method setAdSensePublisherId(publisherId: Text) to store the AdSense publisher ID (ca-pub-XXXXXXXX) in canister state, and getAdSensePublisherId() to retrieve it. The publisher ID should be included in a metadata endpoint or accessible from the frontend configuration.",
+      "id": "AR-2",
+      "summary": "Audit and fix the migration.mo upgrade logic to ensure it does not accidentally reset or drop the videos, photos, comments, likes, ratings, or any other stable state when migrating from the old schema to the new schema (adding razorpayConfig and adSenseConfig fields). The migration must only add new fields and must not touch existing collections.",
       "reqIds": [
-        "REQ-4"
+        "REQ-2"
       ],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Media Share",
+  "projectName": "Restore lost video data and fix data persistence after upgrade deploy",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

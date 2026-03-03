@@ -2,35 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-razorpay-setup-modal-component-similar-to-the-existing-stripesetupmodal-that-allows-the-admin-owner-to-enter-their-razorpay-key-id-and-key-secret-wire-it-into-the-settings-page-with-a-dedicated-razorpay-setup-button-visible-only-to-authenticated-users-add-corresponding-userazorpayconfig-and-usesetrazorpayconfiguration-hooks-mirroring-the-existing-usestripeconfig-pattern",
-      "featureTitle": "Add a Razorpay setup modal component (similar to the existing StripeSetupModal) that allows the admin/owner to enter their Razorpay Key ID and Key Secret. Wire it into the Settings page with a dedicated 'Razorpay Setup' button visible only to authenticated users. Add corresponding useRazorpayConfig and useSetRazorpayConfiguration hooks mirroring the existing useStripeConfig pattern.",
+      "featureId": "feature-display-a-user-facing-notice-on-the-home-page-and-video-gallery-page-informing-users-that-a-technical-issue-occurred-during-the-latest-update-and-that-video-restoration-is-in-progress-to-be-removed-once-data-is-confirmed-restored",
+      "featureTitle": "Display a user-facing notice on the Home page and Video Gallery page informing users that a technical issue occurred during the latest update and that video restoration is in progress, to be removed once data is confirmed restored.",
       "files": [
-        "frontend/src/components/RazorpaySetupModal.tsx",
-        "frontend/src/hooks/useRazorpayConfig.ts",
-        "frontend/src/pages/Settings.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "stripe@3.0.0",
-        "http-outcalls@3.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-upgrade-page-frontend-src-pages-upgrade-tsx-to-display-a-razorpay-payment-option-for-inr-alongside-the-existing-stripe-option-when-the-user-selects-razorpay-checkout-call-the-backend-to-create-a-razorpay-order-load-the-razorpay-js-sdk-https-checkout-razorpay-com-v1-checkout-js-dynamically-open-the-razorpay-checkout-modal-and-on-successful-payment-call-the-backend-verifyrazorpaypayment-method-on-verified-success-redirect-to-the-existing-paymentsuccess-page-on-failure-redirect-to-paymentfailure-page",
-      "featureTitle": "Update the Upgrade page (frontend/src/pages/Upgrade.tsx) to display a Razorpay payment option for INR (₹) alongside the existing Stripe option. When the user selects Razorpay checkout, call the backend to create a Razorpay order, load the Razorpay JS SDK (https://checkout.razorpay.com/v1/checkout.js) dynamically, open the Razorpay checkout modal, and on successful payment call the backend verifyRazorpayPayment method. On verified success, redirect to the existing PaymentSuccess page. On failure, redirect to PaymentFailure page.",
-      "files": [
-        "frontend/src/hooks/useRazorpayCheckout.ts",
-        "frontend/src/pages/Upgrade.tsx"
+        "frontend/src/components/DataRestorationBanner.tsx",
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/pages/VideoGallery.tsx"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -45,33 +22,6 @@
       ],
       "testIds": [
         "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-an-adsense-configuration-section-to-the-settings-page-where-the-authenticated-user-can-enter-and-save-their-google-adsense-publisher-id-ca-pub-xxxxxxxx-add-a-useadsenseconfig-hook-to-read-and-update-the-publisher-id-dynamically-inject-the-google-adsense-script-tag-script-async-src-https-pagead2-googlesyndication-com-pagead-js-adsbygoogle-js-client-ca-pub-xxxx-into-the-page-head-when-a-publisher-id-is-configured-add-adsense-ad-unit-placeholders-ins-adsbygoogle-in-appropriate-locations-below-the-video-player-in-videoplayer-tsx-and-in-the-sidebar-area-in-layout-tsx",
-      "featureTitle": "Add an AdSense configuration section to the Settings page where the authenticated user can enter and save their Google AdSense Publisher ID (ca-pub-XXXXXXXX). Add a useAdSenseConfig hook to read and update the publisher ID. Dynamically inject the Google AdSense script tag (<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX'>) into the page head when a publisher ID is configured. Add AdSense ad unit placeholders (ins.adsbygoogle) in appropriate locations: below the video player in VideoPlayer.tsx and in the sidebar area in Layout.tsx.",
-      "files": [
-        "frontend/src/components/AdSenseScript.tsx",
-        "frontend/src/components/AdSenseUnit.tsx",
-        "frontend/src/components/Layout.tsx",
-        "frontend/src/hooks/useAdSenseConfig.ts",
-        "frontend/src/pages/Settings.tsx",
-        "frontend/src/pages/VideoPlayer.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "stripe@3.0.0",
-        "http-outcalls@3.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
       ],
       "confidence": "high"
     }

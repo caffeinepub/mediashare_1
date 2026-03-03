@@ -1,5 +1,6 @@
 import { VideoCard } from '../components/VideoCard';
 import { useVideos } from '../hooks/useVideos';
+import { DataRestorationBanner } from '../components/DataRestorationBanner';
 
 export function Home() {
   const { data: videos, isLoading } = useVideos();
@@ -11,6 +12,7 @@ export function Home() {
 
   return (
     <div className="w-full">
+      <DataRestorationBanner />
       <section className="p-6">
         {isLoading ? (
           <div className="flex items-center justify-center min-h-[400px]">

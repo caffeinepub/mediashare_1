@@ -1,141 +1,55 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-03T09:59:28.825Z",
+  "generatedAt": "2026-03-03T10:13:50.191Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 3,
+    "total": 3,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add Razorpay payment gateway integration to the backend to support INR-based premium subscriptions for Indian users. Store Razorpay key ID and secret in canister state (similar to existing Stripe config). Expose backend methods: setRazorpayConfiguration(keyId, keySecret), isRazorpayConfigured(), createRazorpayOrder(amount in paise, currency 'INR'), and verifyRazorpayPayment(orderId, paymentId, signature) that validates the HMAC-SHA256 signature and upgrades the caller's subscription to premium on success.",
+        "summary": "Investigate and fix the data loss issue in the backend where all previously uploaded videos were deleted/lost after deploying Version 35. Ensure the stable variable declarations and upgrade/downgrade hooks in main.mo correctly preserve video metadata and associated data (comments, likes, ratings, view counts, thumbnails) across canister upgrades.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Add a Razorpay setup modal component (similar to the existing StripeSetupModal) that allows the admin/owner to enter their Razorpay Key ID and Key Secret. Wire it into the Settings page with a dedicated 'Razorpay Setup' button visible only to authenticated users. Add corresponding useRazorpayConfig and useSetRazorpayConfiguration hooks mirroring the existing useStripeConfig pattern.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/RazorpaySetupModal.tsx",
-          "frontend/src/hooks/useRazorpayConfig.ts",
-          "frontend/src/pages/Settings.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/RazorpaySetupModal.tsx",
-          "frontend/src/hooks/useRazorpayConfig.ts",
-          "frontend/src/pages/Settings.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Update the Upgrade page (frontend/src/pages/Upgrade.tsx) to display a Razorpay payment option for INR (₹) alongside the existing Stripe option. When the user selects Razorpay checkout, call the backend to create a Razorpay order, load the Razorpay JS SDK (https://checkout.razorpay.com/v1/checkout.js) dynamically, open the Razorpay checkout modal, and on successful payment call the backend verifyRazorpayPayment method. On verified success, redirect to the existing PaymentSuccess page. On failure, redirect to PaymentFailure page.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useRazorpayCheckout.ts",
-          "frontend/src/pages/Upgrade.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useRazorpayCheckout.ts",
-          "frontend/src/pages/Upgrade.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Add Google AdSense integration support to the app. Add a backend method setAdSensePublisherId(publisherId: Text) to store the AdSense publisher ID (ca-pub-XXXXXXXX) in canister state, and getAdSensePublisherId() to retrieve it. The publisher ID should be included in a metadata endpoint or accessible from the frontend configuration.",
+        "summary": "Audit and fix the migration.mo upgrade logic to ensure it does not accidentally reset or drop the videos, photos, comments, likes, ratings, or any other stable state when migrating from the old schema to the new schema (adding razorpayConfig and adSenseConfig fields). The migration must only add new fields and must not touch existing collections.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-5",
-        "summary": "Add an AdSense configuration section to the Settings page where the authenticated user can enter and save their Google AdSense Publisher ID (ca-pub-XXXXXXXX). Add a useAdSenseConfig hook to read and update the publisher ID. Dynamically inject the Google AdSense script tag (<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX'>) into the page head when a publisher ID is configured. Add AdSense ad unit placeholders (ins.adsbygoogle) in appropriate locations: below the video player in VideoPlayer.tsx and in the sidebar area in Layout.tsx.",
+        "id": "REQ-3",
+        "summary": "Display a user-facing notice on the Home page and Video Gallery page informing users that a technical issue occurred during the latest update and that video restoration is in progress, to be removed once data is confirmed restored.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useAdSenseConfig.ts",
-          "frontend/src/components/AdSenseScript.tsx",
-          "frontend/src/components/AdSenseUnit.tsx",
-          "frontend/src/pages/Settings.tsx",
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/components/Layout.tsx",
-          "frontend/src/main.tsx"
+          "frontend/src/components/DataRestorationBanner.tsx",
+          "frontend/src/pages/Home.tsx",
+          "frontend/src/pages/VideoGallery.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useAdSenseConfig.ts",
-          "frontend/src/components/AdSenseScript.tsx",
-          "frontend/src/components/AdSenseUnit.tsx",
-          "frontend/src/pages/Settings.tsx",
-          "frontend/src/pages/VideoPlayer.tsx",
-          "frontend/src/components/Layout.tsx"
+          "frontend/src/components/DataRestorationBanner.tsx",
+          "frontend/src/pages/Home.tsx",
+          "frontend/src/pages/VideoGallery.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/AdRevenueDashboard.tsx",
-    "frontend/src/components/AdSenseScript.tsx",
-    "frontend/src/components/AdSenseUnit.tsx",
-    "frontend/src/components/Layout.tsx",
-    "frontend/src/components/PhotoCard.tsx",
-    "frontend/src/components/RazorpaySetupModal.tsx",
-    "frontend/src/components/ThumbnailSelector.tsx",
-    "frontend/src/components/VideoCard.tsx",
-    "frontend/src/components/VideoEditModal.tsx",
-    "frontend/src/components/VideoRating.tsx",
-    "frontend/src/components/VideoSettings.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useAdSenseConfig.ts",
-    "frontend/src/hooks/useAddComment.ts",
-    "frontend/src/hooks/useAverageRating.ts",
-    "frontend/src/hooks/useChannelName.ts",
-    "frontend/src/hooks/useComments.ts",
-    "frontend/src/hooks/useDeleteVideo.ts",
-    "frontend/src/hooks/useGetAdRevenueForCaller.ts",
-    "frontend/src/hooks/useGetAdRevenueForVideo.ts",
-    "frontend/src/hooks/useGetUserRating.ts",
-    "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
-    "frontend/src/hooks/useIncrementVideoView.ts",
-    "frontend/src/hooks/useMarkThumbnailGenerated.ts",
-    "frontend/src/hooks/usePhoto.ts",
-    "frontend/src/hooks/usePhotoUpload.ts",
-    "frontend/src/hooks/usePhotos.ts",
-    "frontend/src/hooks/useRateVideo.ts",
-    "frontend/src/hooks/useRazorpayCheckout.ts",
-    "frontend/src/hooks/useRazorpayConfig.ts",
-    "frontend/src/hooks/useRecordAdImpression.ts",
-    "frontend/src/hooks/useRemoveThumbnail.ts",
-    "frontend/src/hooks/useSearchVideos.ts",
-    "frontend/src/hooks/useSetChannelName.ts",
-    "frontend/src/hooks/useSetCustomThumbnail.ts",
-    "frontend/src/hooks/useSetSubscriptionStatus.ts",
-    "frontend/src/hooks/useTotalRatings.ts",
-    "frontend/src/hooks/useUpdateVideo.ts",
-    "frontend/src/hooks/useUserStats.ts",
-    "frontend/src/hooks/useVideo.ts",
-    "frontend/src/hooks/useVideoLike.ts",
-    "frontend/src/hooks/useVideoUpload.ts",
-    "frontend/src/hooks/useVideos.ts",
-    "frontend/src/lib/types.ts",
-    "frontend/src/pages/ChannelProfile.tsx",
-    "frontend/src/pages/Settings.tsx",
-    "frontend/src/pages/Upgrade.tsx",
-    "frontend/src/pages/UploadVideo.tsx",
-    "frontend/src/pages/VideoPlayer.tsx",
+    "frontend/src/components/DataRestorationBanner.tsx",
+    "frontend/src/pages/Home.tsx",
+    "frontend/src/pages/VideoGallery.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

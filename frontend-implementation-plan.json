@@ -1,105 +1,31 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Integrate Razorpay (INR payments) and Google AdSense (real ad revenue)",
+  "title": "Frontend notice for video data restoration after upgrade issue",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Add Razorpay setup modal and configuration UI for admin to enter Razorpay Key ID and Key Secret in Settings page",
-      "acceptanceCriteria": [
-        "A 'Razorpay Setup' button appears in the Settings page for authenticated users",
-        "Clicking it opens a modal with fields for Key ID and Key Secret",
-        "Submitting the form calls the backend setRazorpayConfiguration method",
-        "A success toast is shown on save",
-        "useRazorpayConfig hook correctly reflects whether Razorpay is configured"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/RazorpaySetupModal.tsx",
-          "operation": "create",
-          "description": "Create a modal dialog component similar to StripeSetupModal that allows authenticated admin users to enter and save their Razorpay Key ID and Key Secret. Include form validation, loading states, and success/error toast notifications. Use the shadcn/ui Dialog, Input, Button, and Label components. Call the backend setRazorpayConfiguration method on form submission."
-        },
-        {
-          "path": "frontend/src/hooks/useRazorpayConfig.ts",
-          "operation": "create",
-          "description": "Create two hooks: useIsRazorpayConfigured (query hook that calls actor.isRazorpayConfiguredLegacy) and useSetRazorpayConfiguration (mutation hook that calls actor.setRazorpayConfiguration with keyId and keySecret parameters). Follow the pattern established in useStripeConfig.ts. Include query invalidation on successful configuration update and toast notifications for user feedback."
-        },
-        {
-          "path": "frontend/src/pages/Settings.tsx",
-          "operation": "modify",
-          "description": "Add a Razorpay configuration section after the existing Stripe setup section. Include a 'Razorpay Setup' button that opens the RazorpaySetupModal when clicked. Display the Razorpay configuration status using the useIsRazorpayConfigured hook. Ensure the button is only visible to authenticated users. Import and use the RazorpaySetupModal component."
-        }
-      ]
-    },
-    {
       "id": "REQ-3",
-      "summary": "Update Upgrade page to display Razorpay payment option for INR alongside Stripe, handle Razorpay checkout flow with dynamic SDK loading, and redirect to PaymentSuccess or PaymentFailure",
+      "summary": "Display a dismissible notice banner on Home and Video Gallery pages informing users that a technical issue occurred during the latest update and video restoration is in progress",
       "acceptanceCriteria": [
-        "Upgrade page shows a Razorpay payment button labeled with INR pricing (e.g., ₹499/month)",
-        "Razorpay checkout modal opens with correct order details",
-        "On payment success the signature is verified via backend before redirecting to PaymentSuccess",
-        "On payment failure or dismissal the user is redirected to PaymentFailure page",
-        "Razorpay option is only shown when isRazorpayConfigured() returns true"
+        "A dismissible banner or alert is shown at the top of the Home page and Video Gallery page",
+        "The banner communicates clearly that a technical issue may have affected video visibility",
+        "The banner is easy to remove from the codebase once the issue is resolved"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useRazorpayCheckout.ts",
+          "path": "frontend/src/components/DataRestorationBanner.tsx",
           "operation": "create",
-          "description": "Create a mutation hook that orchestrates the Razorpay payment flow: (1) calls actor.createRazorpayOrder to get an order ID, (2) dynamically loads the Razorpay JS SDK from https://checkout.razorpay.com/v1/checkout.js if not already loaded, (3) opens the Razorpay checkout modal with order details, (4) handles the payment response by calling actor.verifyRazorpayPayment with orderId, paymentId, and signature, (5) returns success/failure status. Include error handling for SDK loading failures and payment verification errors. Use React Query mutation pattern with appropriate toast notifications."
+          "description": "Create a dismissible alert banner component that displays a clear message about the technical issue affecting video visibility during the Version 35 update. The banner should include an info icon, a concise message explaining that video restoration is in progress, and a close button that persists the dismissal state in localStorage to prevent repeated displays. Style using shadcn/ui Alert component with appropriate info variant and dismissible behavior."
         },
         {
-          "path": "frontend/src/pages/Upgrade.tsx",
+          "path": "frontend/src/pages/Home.tsx",
           "operation": "modify",
-          "description": "Add a Razorpay payment option card displaying INR pricing (₹499/month) alongside the existing Stripe Premium plan card. Use the useIsRazorpayConfigured hook to conditionally show the Razorpay option only when configured. When the user clicks the Razorpay checkout button, use the useRazorpayCheckout hook to initiate the payment flow. On successful verification, navigate to /payment-success using the router. On failure or dismissal, navigate to /payment-failure. Add loading states during the checkout process and ensure the UI clearly distinguishes between Stripe (USD) and Razorpay (INR) payment options."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Add AdSense configuration UI in Settings, dynamically inject AdSense script when configured, and place ad units below video player and in sidebar",
-      "acceptanceCriteria": [
-        "Settings page has an 'AdSense Configuration' section with a Publisher ID input field",
-        "Saving the publisher ID calls the backend setAdSensePublisherId method",
-        "When a publisher ID is configured, the AdSense script is injected into the document head",
-        "Ad unit placeholders (ins.adsbygoogle) are rendered below the video player",
-        "Ad unit placeholders are rendered in a sidebar slot in the main layout",
-        "adsbygoogle.push({}) is called after each ad unit renders"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useAdSenseConfig.ts",
-          "operation": "create",
-          "description": "Create two hooks: useGetAdSensePublisherId (query hook that calls actor.getAdSensePublisherId and returns the publisher ID or null) and useSetAdSensePublisherId (mutation hook that calls actor.setAdSensePublisherId with the publisher ID parameter). Include query invalidation on successful save and toast notifications for user feedback. Follow the pattern established in other configuration hooks."
+          "description": "Import and render the DataRestorationBanner component at the top of the Home page, above the video grid. Position the banner to be clearly visible when users land on the home page."
         },
         {
-          "path": "frontend/src/components/AdSenseScript.tsx",
-          "operation": "create",
-          "description": "Create a component that uses useGetAdSensePublisherId to fetch the publisher ID. When a valid publisher ID is present, dynamically inject the Google AdSense script tag into the document head using useEffect. The script URL should be https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX where XXXX is replaced with the actual publisher ID. Ensure the script is only injected once and cleaned up on unmount if needed. Return null (no visual output)."
-        },
-        {
-          "path": "frontend/src/components/AdSenseUnit.tsx",
-          "operation": "create",
-          "description": "Create a reusable AdSense ad unit component that renders an ins.adsbygoogle element with appropriate data attributes (data-ad-client with publisher ID, data-ad-slot, data-ad-format). Use useGetAdSensePublisherId to fetch the publisher ID. Use useEffect to call (window.adsbygoogle = window.adsbygoogle || []).push({}) after the component mounts to initialize the ad. Accept props for ad slot ID and format. Only render the ad unit when a publisher ID is configured. Handle TypeScript window.adsbygoogle type safely."
-        },
-        {
-          "path": "frontend/src/pages/Settings.tsx",
+          "path": "frontend/src/pages/VideoGallery.tsx",
           "operation": "modify",
-          "description": "Add an 'AdSense Configuration' section after the Razorpay setup section. Include an input field for the Google AdSense Publisher ID (ca-pub-XXXXXXXX) with validation to ensure the format matches ca-pub- prefix. Add a save button that calls the useSetAdSensePublisherId mutation. Display the current publisher ID if one is configured using the useGetAdSensePublisherId hook. Show success/error feedback via toast notifications. Ensure this section is only visible to authenticated users."
-        },
-        {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Import and render the AdSenseUnit component below the video player element (after the video controls but before the comments section). Pass appropriate ad slot props to the AdSenseUnit component. Ensure the ad unit integrates smoothly with the existing layout without disrupting the video playback experience or user interactions."
-        },
-        {
-          "path": "frontend/src/components/Layout.tsx",
-          "operation": "modify",
-          "description": "Import and render the AdSenseScript component at the top level of the Layout to ensure the AdSense script is loaded on every page. Add an AdSenseUnit component in a sidebar area (on desktop viewports) positioned appropriately within the existing layout structure. Ensure the ad unit respects responsive design breakpoints and does not interfere with the collapsible sidebar functionality or mobile navigation."
-        },
-        {
-          "path": "frontend/src/main.tsx",
-          "operation": "modify",
-          "description": "Ensure the AdSenseScript component is imported and rendered at the application root level (within the InternetIdentityProvider and QueryClientProvider wrappers but outside the router) so that the AdSense script is available globally across all routes. This ensures consistent ad serving regardless of navigation."
+          "description": "Import and render the DataRestorationBanner component at the top of the Video Gallery page, above the search input and video grid. Ensure consistent placement with the Home page implementation."
         }
       ]
     }
