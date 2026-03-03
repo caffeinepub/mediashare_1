@@ -136,7 +136,7 @@ export interface _SERVICE {
   'getUserStats' : ActorMethod<[Principal], UserStats>,
   'getVideo' : ActorMethod<[string], ExtendedVideo>,
   'getVideoMetadata' : ActorMethod<[string], VideoMetadata>,
-  'incrementVideoView' : ActorMethod<[string], undefined>,
+  'incrementVideoView' : ActorMethod<[string], bigint>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'likeVideo' : ActorMethod<[string], undefined>,
   'listPhotos' : ActorMethod<[], Array<PhotoMetadata>>,

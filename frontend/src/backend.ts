@@ -201,7 +201,7 @@ export interface backendInterface {
     getUserStats(user: Principal): Promise<UserStats>;
     getVideo(videoId: string): Promise<ExtendedVideo>;
     getVideoMetadata(videoId: string): Promise<VideoMetadata>;
-    incrementVideoView(videoId: string): Promise<void>;
+    incrementVideoView(videoId: string): Promise<bigint>;
     isCallerAdmin(): Promise<boolean>;
     likeVideo(videoId: string): Promise<void>;
     listPhotos(): Promise<Array<PhotoMetadata>>;
@@ -595,7 +595,7 @@ export class Backend implements backendInterface {
             return from_candid_VideoMetadata_n20(this._uploadFile, this._downloadFile, result);
         }
     }
-    async incrementVideoView(arg0: string): Promise<void> {
+    async incrementVideoView(arg0: string): Promise<bigint> {
         if (this.processError) {
             try {
                 const result = await this.actor.incrementVideoView(arg0);

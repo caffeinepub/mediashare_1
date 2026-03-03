@@ -1,5 +1,6 @@
-import { Link, useMatchRoute } from '@tanstack/react-router';
-import { Home, Upload, PlaySquare, Users, UserCircle } from 'lucide-react';
+import { Link, useMatchRoute, useRouterState } from '@tanstack/react-router';
+import { Home, Upload, PlaySquare, Users } from 'lucide-react';
+import { ProfileDropdownMenu } from './ProfileDropdownMenu';
 
 const navItems = [
   {
@@ -26,20 +27,25 @@ const navItems = [
     icon: Users,
     exact: false,
   },
-  {
-    to: '/profile' as const,
-    label: 'Profile',
-    icon: UserCircle,
-    exact: false,
-  },
 ];
 
 export function BottomNav() {
   const matchRoute = useMatchRoute();
+  const routerState = useRouterState();
+  const currentPath = routerState.location.pathname;
+
+  // Determine if the Profile tab should appear active
+  const isProfileActive =
+    currentPath === '/profile' ||
+    currentPath === '/settings' ||
+    currentPath.startsWith('/channel/');
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
-      <div className="flex items-stretch justify-around h-16 sm:h-20">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border"
+      style={{ overflow: 'visible' }}
+    >
+      <div className="flex items-stretch justify-around h-16 sm:h-20" style={{ overflow: 'visible' }}>
         {navItems.map(({ to, label, icon: Icon, exact }) => {
           const isActive = !!matchRoute({ to, fuzzy: !exact });
 
@@ -72,6 +78,31 @@ export function BottomNav() {
             </Link>
           );
         })}
+
+        {/* Profile tab — opens dropdown instead of navigating */}
+        <div
+          className={`
+            flex flex-col items-center justify-center flex-1 gap-1 px-1 py-2
+            transition-colors duration-150 select-none relative
+            ${isProfileActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}
+          `}
+          style={{ overflow: 'visible' }}
+        >
+          {isProfileActive && (
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full bg-primary" />
+          )}
+          <ProfileDropdownMenu
+            align="end"
+            triggerClassName={`
+              !bg-transparent !border-0 !shadow-none hover:!bg-transparent
+              flex flex-col items-center gap-1 w-full h-full
+              ${isProfileActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}
+            `}
+          />
+          <span className={`text-xs font-medium leading-none ${isProfileActive ? 'font-semibold' : ''}`}>
+            Profile
+          </span>
+        </div>
       </div>
     </nav>
   );

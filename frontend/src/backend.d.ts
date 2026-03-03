@@ -108,7 +108,7 @@ export interface backendInterface {
     getUserStats(user: Principal): Promise<UserStats>;
     getVideo(videoId: string): Promise<ExtendedVideo>;
     getVideoMetadata(videoId: string): Promise<VideoMetadata>;
-    incrementVideoView(videoId: string): Promise<void>;
+    incrementVideoView(videoId: string): Promise<bigint>;
     isCallerAdmin(): Promise<boolean>;
     likeVideo(videoId: string): Promise<void>;
     listPhotos(): Promise<Array<PhotoMetadata>>;

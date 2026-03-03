@@ -1,98 +1,36 @@
 {
   "kind": "build_request",
-  "title": "Add Profile Page with Channel Info and Fix View Count Logic",
-  "projectName": "MediaShare",
-  "priority": "normal",
+  "title": "Fix views increment option not working in VideoPlayer",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a Profile tab to the bottom navigation bar (alongside Home, Upload, Shorts, Subscriptions) that navigates to the authenticated user's own profile page.",
+      "text": "Fix the view count increment feature in the VideoPlayer page so that view counts are correctly incremented when a user watches a video. The current logic tracks 5 seconds of actual watch time before calling useIncrementVideoView, but this is not triggering reliably. Ensure the increment fires exactly once per valid viewing session and that the updated view count is reflected in the UI afterward.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "profile ka option add karo"
+          "Views increase option not working"
         ]
       },
       "acceptanceCriteria": [
-        "A 'Profile' tab with a user/person icon appears in the BottomNav component.",
-        "Tapping the Profile tab navigates to the current user's channel profile page.",
-        "The Profile tab shows an active indicator when the profile route is active.",
-        "Unauthenticated users see a prompt to sign in when tapping the Profile tab."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Create a dedicated User Profile page that displays the authenticated user's profile information (display name, channel name, principal ID) and channel statistics (total videos uploaded, total views, total likes received), along with a grid of the user's uploaded videos and photos.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "jahan channel ki aur profile ki jankari hoti h"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The profile page shows the user's display name and channel name prominently.",
-        "Channel stats (video count, total views, total likes) are displayed as stat cards.",
-        "A grid of the user's uploaded videos is shown below the profile info.",
-        "A grid or section for the user's uploaded photos is also shown.",
-        "A link or button to navigate to Settings (to edit profile) is present.",
-        "Unauthenticated users see a sign-in prompt instead of profile content."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add a '/profile' route to the router that renders the new User Profile page for the currently authenticated user.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "profile ka option add karo"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Navigating to '/profile' renders the User Profile page.",
-        "The route is registered in App.tsx alongside existing routes.",
-        "The page reuses existing hooks (useGetCallerUserProfile, useUserStats, useVideos, usePhotos) to populate data."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Ensure video view counts increment only when an authenticated user has actively watched the video — the view count increment must be triggered after a minimum watch threshold (e.g., at least 5 seconds of playback), not on page load or when the video is merely loaded in the DOM.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "video ke views automatically badh rahe h keval agar koi user ise dekhta h tabhi views count hone chahiye"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The useIncrementVideoView mutation is called only after the video has been played for at least 5 seconds.",
-        "View count does NOT increment on page load or on video mount without playback.",
-        "View count does NOT increment for unauthenticated (anonymous) users.",
-        "View count increments at most once per page visit, even if the video is rewound or replayed.",
-        "A timeupdate or onPlaying event listener is used to track actual playback duration before triggering the increment."
+        "After a user watches at least 5 seconds of a video, the view count increments by 1",
+        "The increment is called only once per viewing session (no duplicate calls on re-render)",
+        "The updated view count is visible on the VideoPlayer page after the increment",
+        "The useIncrementVideoView mutation is invoked and the related video queries are invalidated on success"
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
-    "Reuse existing hooks (useGetCallerUserProfile, useUserStats, useVideos, usePhotos, useChannelName) instead of creating redundant ones.",
-    "View count increment logic must remain authenticated-only as currently enforced in useIncrementVideoView."
+    "Do not change the backend view count storage logic unless the frontend fix alone is insufficient",
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui"
   ],
   "nonGoals": [
-    "Editing profile information from the new Profile page (that remains in Settings).",
-    "Subscription management on the Profile page.",
-    "Public profile pages for other users (only the current user's own profile is in scope).",
-    "Backend changes to the view count logic — the fix is purely in when the frontend triggers the mutation."
+    "Changing the 5-second watch threshold policy",
+    "Adding view count analytics or tracking beyond the existing increment mechanism",
+    "Fixing any other unrelated VideoPlayer UI issues"
   ],
   "imageRequirements": {
     "required": [],

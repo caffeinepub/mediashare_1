@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from '../hooks/useGetCallerUserProfile';
@@ -6,8 +7,10 @@ import { useVideos } from '../hooks/useVideos';
 import { usePhotos } from '../hooks/usePhotos';
 import { VideoCard } from '../components/VideoCard';
 import { PhotoCard } from '../components/PhotoCard';
+import { DeleteVideoButton } from '../components/DeleteVideoButton';
+import { VideoEditModal } from '../components/VideoEditModal';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
@@ -20,17 +23,87 @@ import {
   Heart,
   Calendar,
   LogIn,
+  Share2,
+  Loader2,
+  UserPlus,
+  Edit,
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { Principal } from '@dfinity/principal';
 import { formatViewCount } from '../utils/formatters';
+import type { VideoMetadata } from '../backend';
+import { useVideo } from '../hooks/useVideo';
+
+// Small wrapper to load full ExtendedVideo for the edit modal
+function VideoCardWithActions({
+  video,
+  onEdit,
+}: {
+  video: VideoMetadata;
+  onEdit: (videoId: string) => void;
+}) {
+  return (
+    <div className="relative group">
+      <VideoCard video={video} />
+      {/* Action buttons — always visible, not just on hover */}
+      <div className="absolute top-2 right-2 flex gap-1">
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-8 w-8 shadow-md"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onEdit(video.id);
+          }}
+          title="Edit video"
+        >
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+          <DeleteVideoButton
+            videoId={video.id}
+            variant="secondary"
+            size="icon"
+            showLabel={false}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Edit modal wrapper that fetches the full ExtendedVideo
+function VideoEditModalWrapper({
+  videoId,
+  open,
+  onOpenChange,
+}: {
+  videoId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { data: video, isLoading } = useVideo(videoId);
+
+  if (!open) return null;
+  if (isLoading || !video) return null;
+
+  return (
+    <VideoEditModal
+      open={open}
+      onOpenChange={onOpenChange}
+      video={video}
+      videoId={videoId}
+    />
+  );
+}
 
 export function Profile() {
   const navigate = useNavigate();
-  const { identity, login, loginStatus } = useInternetIdentity();
+  const { identity, login, isInitializing, isLoggingIn } = useInternetIdentity();
 
-  const isAuthenticated = !!identity;
-  const principal = identity?.getPrincipal();
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+  const principal = isAuthenticated ? identity?.getPrincipal() : undefined;
 
   // Always call hooks unconditionally
   const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
@@ -39,6 +112,8 @@ export function Profile() {
   );
   const { data: allVideos, isLoading: videosLoading } = useVideos();
   const { data: allPhotos, isLoading: photosLoading } = usePhotos();
+
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
 
   const isLoading = profileLoading || statsLoading || videosLoading || photosLoading;
 
@@ -67,31 +142,79 @@ export function Profile() {
     [myVideos]
   );
 
-  // Unauthenticated state
-  if (!isAuthenticated) {
+  // While auth is initializing (checking stored identity), show a spinner
+  if (isInitializing) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-6">
-          <User className="w-12 h-12 text-muted-foreground" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Sign in to view your profile</h2>
-        <p className="text-muted-foreground mb-8 max-w-sm">
-          Sign in to see your channel info, uploaded videos, photos, and stats.
-        </p>
-        <Button
-          size="lg"
-          onClick={() => login()}
-          disabled={loginStatus === 'logging-in'}
-          className="gap-2"
-        >
-          <LogIn className="w-5 h-5" />
-          {loginStatus === 'logging-in' ? 'Signing in...' : 'Sign In'}
-        </Button>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground text-sm">Loading profile…</p>
       </div>
     );
   }
 
-  // Loading skeleton
+  // Unauthenticated state — show prominent sign-in + create account CTA
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
+        {/* App icon */}
+        <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg">
+          <Share2 className="w-10 h-10 text-primary-foreground" />
+        </div>
+
+        <h1 className="text-3xl font-bold mb-2">Media Share</h1>
+        <h2 className="text-xl font-semibold mb-3 text-foreground">Join Media Share</h2>
+        <p className="text-muted-foreground mb-8 max-w-sm">
+          Create an account or sign in to upload videos, manage your channel, and connect with others.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+          {/* Create Account - primary CTA */}
+          <Button
+            size="lg"
+            onClick={() => login()}
+            disabled={isLoggingIn}
+            className="gap-2 flex-1 font-semibold"
+          >
+            {isLoggingIn ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Connecting…
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-5 h-5" />
+                Create Account
+              </>
+            )}
+          </Button>
+
+          {/* Sign In - secondary CTA */}
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => login()}
+            disabled={isLoggingIn}
+            className="gap-2 flex-1 font-semibold"
+          >
+            {isLoggingIn ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <LogIn className="w-5 h-5" />
+                Sign In
+              </>
+            )}
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground mt-6 max-w-xs">
+          Secure authentication powered by Internet Identity. No passwords required.
+        </p>
+      </div>
+    );
+  }
+
+  // Loading skeleton (authenticated but data still loading)
   if (isLoading) {
     return (
       <div className="container py-8 space-y-6">
@@ -131,7 +254,7 @@ export function Profile() {
       {/* Profile Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
         {/* Avatar */}
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center shrink-0">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-chart-3 flex items-center justify-center shrink-0">
           <User className="w-10 h-10 text-white" />
         </div>
 
@@ -239,7 +362,11 @@ export function Profile() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {myVideos.map((video) => (
-                <VideoCard key={video.id} video={video} />
+                <VideoCardWithActions
+                  key={video.id}
+                  video={video}
+                  onEdit={(videoId) => setEditingVideoId(videoId)}
+                />
               ))}
             </div>
           )}
@@ -267,6 +394,17 @@ export function Profile() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Video Edit Modal */}
+      {editingVideoId && (
+        <VideoEditModalWrapper
+          videoId={editingVideoId}
+          open={!!editingVideoId}
+          onOpenChange={(open) => {
+            if (!open) setEditingVideoId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

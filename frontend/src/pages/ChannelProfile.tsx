@@ -1,21 +1,92 @@
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { Principal } from '@dfinity/principal';
 import { useVideos } from '../hooks/useVideos';
 import { usePhotos } from '../hooks/usePhotos';
 import { useChannelName } from '../hooks/useChannelName';
 import { useUserStats } from '../hooks/useUserStats';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useVideo } from '../hooks/useVideo';
 import { VideoCard } from '../components/VideoCard';
 import { PhotoCard } from '../components/PhotoCard';
+import { DeleteVideoButton } from '../components/DeleteVideoButton';
+import { VideoEditModal } from '../components/VideoEditModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ArrowLeft, User, Video, Image, Calendar } from 'lucide-react';
+import { Loader2, ArrowLeft, User, Video, Image, Calendar, Edit } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useMemo } from 'react';
+import type { VideoMetadata } from '../backend';
+
+// Edit modal wrapper that fetches the full ExtendedVideo
+function VideoEditModalWrapper({
+  videoId,
+  open,
+  onOpenChange,
+}: {
+  videoId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { data: video, isLoading } = useVideo(videoId);
+
+  if (!open) return null;
+  if (isLoading || !video) return null;
+
+  return (
+    <VideoEditModal
+      open={open}
+      onOpenChange={onOpenChange}
+      video={video}
+      videoId={videoId}
+    />
+  );
+}
+
+// Video card with owner actions (edit + delete) — always visible
+function VideoCardWithOwnerActions({
+  video,
+  onEdit,
+}: {
+  video: VideoMetadata;
+  onEdit: (videoId: string) => void;
+}) {
+  return (
+    <div className="relative">
+      <VideoCard video={video} />
+      <div className="absolute top-2 right-2 flex gap-1">
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-8 w-8 shadow-md"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onEdit(video.id);
+          }}
+          title="Edit video"
+        >
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+          <DeleteVideoButton
+            videoId={video.id}
+            variant="secondary"
+            size="icon"
+            showLabel={false}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function ChannelProfile() {
   const { principal: principalParam } = useParams({ from: '/channel/$principal' });
   const navigate = useNavigate();
+  const { identity } = useInternetIdentity();
+
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
 
   // Parse principal first, but always call hooks
   const principal = useMemo(() => {
@@ -25,6 +96,12 @@ export function ChannelProfile() {
       return null;
     }
   }, [principalParam]);
+
+  // Check if the current user is the channel owner
+  const isOwner = useMemo(() => {
+    if (!identity || !principal) return false;
+    return identity.getPrincipal().toString() === principal.toString();
+  }, [identity, principal]);
 
   // Always call hooks unconditionally
   const { data: channelName, isLoading: channelLoading } = useChannelName(principal || Principal.anonymous());
@@ -154,9 +231,17 @@ export function ChannelProfile() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {userVideos.map((video) => (
-                <VideoCard key={video.id} video={video} />
-              ))}
+              {userVideos.map((video) =>
+                isOwner ? (
+                  <VideoCardWithOwnerActions
+                    key={video.id}
+                    video={video}
+                    onEdit={(videoId) => setEditingVideoId(videoId)}
+                  />
+                ) : (
+                  <VideoCard key={video.id} video={video} />
+                )
+              )}
             </div>
           )}
         </TabsContent>
@@ -177,6 +262,17 @@ export function ChannelProfile() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Video Edit Modal */}
+      {editingVideoId && (
+        <VideoEditModalWrapper
+          videoId={editingVideoId}
+          open={!!editingVideoId}
+          onOpenChange={(open) => {
+            if (!open) setEditingVideoId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,75 +1,22 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add Profile Page with Channel Info and Fix View Count Logic",
+  "title": "Fix views increment option not working in VideoPlayer",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add Profile tab to bottom navigation that navigates to the authenticated user's profile page",
+      "summary": "Fix the view count increment feature in the VideoPlayer page so that view counts are correctly incremented when a user watches a video",
       "acceptanceCriteria": [
-        "A 'Profile' tab with a user/person icon appears in the BottomNav component.",
-        "Tapping the Profile tab navigates to the current user's channel profile page.",
-        "The Profile tab shows an active indicator when the profile route is active.",
-        "Unauthenticated users see a prompt to sign in when tapping the Profile tab."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/BottomNav.tsx",
-          "operation": "modify",
-          "description": "Add a fifth tab for 'Profile' alongside Home, Upload, Shorts, and Subscriptions. Use a User/UserCircle icon from lucide-react. Apply the same active-state styling (scale, color change) when the current route matches '/profile'. The tab should navigate to '/profile' when clicked."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Create a User Profile page displaying the authenticated user's profile information, channel statistics, and uploaded content",
-      "acceptanceCriteria": [
-        "The profile page shows the user's display name and channel name prominently.",
-        "Channel stats (video count, total views, total likes) are displayed as stat cards.",
-        "A grid of the user's uploaded videos is shown below the profile info.",
-        "A grid or section for the user's uploaded photos is also shown.",
-        "A link or button to navigate to Settings (to edit profile) is present.",
-        "Unauthenticated users see a sign-in prompt instead of profile content."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Profile.tsx",
-          "operation": "create",
-          "description": "Create a new Profile page component that displays the authenticated user's own profile. Use useInternetIdentity to get the current identity. For unauthenticated users, show a centered prompt with a sign-in button. For authenticated users: (1) Use useGetCallerUserProfile to fetch the user's profile (display name and channel name). (2) Use useUserStats with identity.getPrincipal() to fetch stats (totalVideosUploaded, totalPhotosUploaded). (3) Calculate total views by filtering useVideos() results by uploader principal and summing viewCount. (4) Calculate total likes similarly by summing likeCount. (5) Display profile info at the top with name and channel name. (6) Show three stat cards for video count, total views, and total likes. (7) Add a 'Settings' link/button that navigates to '/settings'. (8) Below the stats, display two sections: 'My Videos' (grid of VideoCard components filtered by uploader) and 'My Photos' (grid of PhotoCard components filtered by uploader). Apply responsive grid layouts (grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4). Show loading skeletons while data is fetching. Handle empty states with friendly messages if the user has no uploads."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Add '/profile' route to the router that renders the new User Profile page",
-      "acceptanceCriteria": [
-        "Navigating to '/profile' renders the User Profile page.",
-        "The route is registered in App.tsx alongside existing routes.",
-        "The page reuses existing hooks (useGetCallerUserProfile, useUserStats, useVideos, usePhotos) to populate data."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Import the new Profile page component. Add a new Route for path='/profile' that renders the Profile page component, wrapped in the same Layout as other routes. Position the route definition alongside other top-level routes like Home, Settings, VideoGallery, etc."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Ensure video view counts increment only after authenticated users actively watch the video for at least 5 seconds",
-      "acceptanceCriteria": [
-        "The useIncrementVideoView mutation is called only after the video has been played for at least 5 seconds.",
-        "View count does NOT increment on page load or on video mount without playback.",
-        "View count does NOT increment for unauthenticated (anonymous) users.",
-        "View count increments at most once per page visit, even if the video is rewound or replayed.",
-        "A timeupdate or onPlaying event listener is used to track actual playback duration before triggering the increment."
+        "After a user watches at least 5 seconds of a video, the view count increments by 1",
+        "The increment is called only once per viewing session (no duplicate calls on re-render)",
+        "The updated view count is visible on the VideoPlayer page after the increment",
+        "The useIncrementVideoView mutation is invoked and the related video queries are invalidated on success"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Modify the view count increment logic to trigger only after the user has actively watched at least 5 seconds of video. Add a useEffect that: (1) Attaches a 'timeupdate' event listener to the video element. (2) Tracks cumulative playback time (not just currentTime, to handle seeking). (3) Calls the incrementVideoView mutation only once when cumulative playback reaches 5 seconds AND the user is authenticated (identity exists). (4) Uses a ref to ensure the mutation is called at most once per page visit. (5) Cleans up the event listener on unmount. Remove any existing view increment calls that fire on mount or video load without checking playback duration."
+          "description": "Fix the view increment logic to ensure it fires exactly once per viewing session after 5 seconds of actual watch time. Review the current implementation that tracks playback time and calls useIncrementVideoView. Ensure the increment is triggered using a ref-based flag to prevent duplicate calls on re-render, and that the mutation is invoked with proper error handling. Verify the logic accounts for pauses and only counts actual playback time. After the increment succeeds, ensure the updated view count is reflected in the UI by relying on the mutation's query invalidation."
         }
       ]
     }

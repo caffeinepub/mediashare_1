@@ -1,26 +1,24 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useInternetIdentity } from './useInternetIdentity';
 
 export function useIncrementVideoView() {
   const { actor } = useActor();
-  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (videoId: string) => {
-      // Only increment view count for authenticated (non-anonymous) users
-      if (!identity) return;
       if (!actor) throw new Error('Actor not available');
-      await actor.incrementVideoView(videoId);
+      return actor.incrementVideoView(videoId);
     },
     onSuccess: (_, videoId) => {
-      // Invalidate video queries to refresh view count
+      // Invalidate all relevant video queries to refresh view count in UI
       queryClient.invalidateQueries({ queryKey: ['video', videoId] });
       queryClient.invalidateQueries({ queryKey: ['videos'] });
+      queryClient.invalidateQueries({ queryKey: ['videoMetadata', videoId] });
     },
-    onError: () => {
-      // Silent error handling - view count increment failures shouldn't disrupt user experience
+    onError: (error) => {
+      // Log error but don't disrupt user experience
+      console.error('Failed to increment view count:', error);
     },
   });
 }

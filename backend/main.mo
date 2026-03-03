@@ -181,15 +181,13 @@ actor {
   };
 
   // Only authenticated users can increment view count for a video
-  public shared ({ caller }) func incrementVideoView(videoId : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can increment view counts");
-    };
+  public shared ({ caller }) func incrementVideoView(videoId : Text) : async Nat {
     switch (videos.get(videoId)) {
       case (null) { Runtime.trap("Failed to increment view count: video not found") };
       case (?video) {
         let updatedVideo = { video with viewCount = video.viewCount + 1 };
         videos.add(videoId, updatedVideo);
+        updatedVideo.viewCount;
       };
     };
   };
@@ -381,6 +379,9 @@ actor {
   };
 
   public shared ({ caller }) func deleteVideo(videoId : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete videos");
+    };
     switch (videos.get(videoId)) {
       case (null) { Runtime.trap("Video not found") };
       case (?video) {
@@ -390,12 +391,15 @@ actor {
         videos.remove(videoId);
         comments.remove(videoId);
         videoLikes.remove(videoId);
-        ratings.remove(videoId); // Remove ratings when deleting video
+        ratings.remove(videoId);
       };
     };
   };
 
   public shared ({ caller }) func deletePhoto(photoId : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete photos");
+    };
     switch (photos.get(photoId)) {
       case (null) { Runtime.trap("Photo not found") };
       case (?photo) {

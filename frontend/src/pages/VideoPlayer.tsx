@@ -8,7 +8,7 @@ import { useSubscribe } from '../hooks/useSubscribe';
 import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Heart, Bell, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Heart, Bell, ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
 import { CommentSection } from '../components/CommentSection';
 import { ChannelNameDisplay } from '../components/ChannelNameDisplay';
 import { VideoEditModal } from '../components/VideoEditModal';
@@ -18,6 +18,17 @@ import { ShareButton } from '../components/ShareButton';
 import { formatViewCount } from '../utils/formatters';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useDeleteVideo } from '../hooks/useDeleteVideo';
 
 export default function VideoPlayer() {
   const { id } = useParams({ from: '/video/$id' });
@@ -26,11 +37,13 @@ export default function VideoPlayer() {
   const { data: video, isLoading, error } = useVideo(id);
   const { data: allVideos } = useVideos();
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const { mutate: likeVideo, isPending: isLiking } = useVideoLike();
   const { mutate: incrementView } = useIncrementVideoView();
   const { mutate: subscribe, isPending: isSubscribing } = useSubscribe();
   const { data: isSubscribed } = useSubscriptionStatus(video?.uploader);
+  const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
 
   // Refs for view count tracking
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -38,12 +51,21 @@ export default function VideoPlayer() {
   const watchedSecondsRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
 
-  // Increment view count only after 5 seconds of actual playback by an authenticated user
+  // Keep a stable ref to incrementView so the effect doesn't re-run when the
+  // mutation function reference changes between renders.
+  const incrementViewRef = useRef(incrementView);
+  useEffect(() => {
+    incrementViewRef.current = incrementView;
+  }, [incrementView]);
+
+  // Increment view count after 5 seconds of actual playback (for all users).
+  // Only depend on `id` so the tracking state is reset only when the video changes,
+  // not on every render caused by a new `incrementView` reference.
   useEffect(() => {
     const videoEl = videoRef.current;
-    if (!videoEl || !id || !identity) return;
+    if (!videoEl || !id) return;
 
-    // Reset tracking when video/id changes
+    // Reset tracking when video id changes
     viewCountedRef.current = false;
     watchedSecondsRef.current = 0;
     lastTimeRef.current = null;
@@ -55,7 +77,7 @@ export default function VideoPlayer() {
 
       if (lastTimeRef.current !== null && !videoEl.paused) {
         const delta = currentTime - lastTimeRef.current;
-        // Only count forward playback (not seeking backwards)
+        // Only count forward playback (not seeking backwards or large jumps)
         if (delta > 0 && delta < 2) {
           watchedSecondsRef.current += delta;
         }
@@ -65,7 +87,11 @@ export default function VideoPlayer() {
       // Trigger view count after 5 seconds of actual watch time
       if (watchedSecondsRef.current >= 5 && !viewCountedRef.current) {
         viewCountedRef.current = true;
-        incrementView(id);
+        incrementViewRef.current(id, {
+          onError: (err) => {
+            console.error('View increment failed:', err);
+          },
+        });
       }
     };
 
@@ -74,14 +100,21 @@ export default function VideoPlayer() {
       lastTimeRef.current = videoEl.currentTime;
     };
 
+    const handlePlay = () => {
+      // Sync lastTime when playback resumes
+      lastTimeRef.current = videoEl.currentTime;
+    };
+
     videoEl.addEventListener('timeupdate', handleTimeUpdate);
     videoEl.addEventListener('seeked', handleSeeked);
+    videoEl.addEventListener('play', handlePlay);
 
     return () => {
       videoEl.removeEventListener('timeupdate', handleTimeUpdate);
       videoEl.removeEventListener('seeked', handleSeeked);
+      videoEl.removeEventListener('play', handlePlay);
     };
-  }, [id, identity, incrementView]);
+  }, [id]); // Only re-run when the video id changes
 
   // Use ExternalBlob.getDirectURL() for streaming video content
   const videoUrl = useMemo(() => {
@@ -127,6 +160,14 @@ export default function VideoPlayer() {
     }
     if (!video) return;
     subscribe({ channelPrincipal: video.uploader });
+  };
+
+  const handleDeleteConfirm = () => {
+    deleteVideo(id, {
+      onSuccess: () => {
+        navigate({ to: '/' });
+      },
+    });
   };
 
   // Truncate description for collapsed state
@@ -186,11 +227,13 @@ export default function VideoPlayer() {
           </div>
 
           {/* Video title */}
-          <h1 className="text-2xl font-bold mb-3">{video.title}</h1>
+          <div className="mb-3">
+            <h1 className="text-xl sm:text-2xl font-bold">{video.title}</h1>
+          </div>
 
           {/* Channel info and action buttons */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 pb-4 border-b">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center shrink-0">
                   <span className="text-white text-sm font-medium">
@@ -235,11 +278,28 @@ export default function VideoPlayer() {
 
               <ShareButton />
 
+              {/* Owner-only controls — always visible when user is the owner */}
               {isOwner && (
-                <Button variant="outline" size="default" onClick={() => setEditOpen(true)} className="gap-2">
-                  <Edit className="h-4 w-4" />
-                  <span className="hidden sm:inline">Edit</span>
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={() => setEditOpen(true)}
+                    className="gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    <span className="hidden sm:inline">Edit</span>
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="default"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Delete</span>
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -313,6 +373,7 @@ export default function VideoPlayer() {
         </div>
       </div>
 
+      {/* Edit modal */}
       {isOwner && (
         <VideoEditModal
           open={editOpen}
@@ -321,6 +382,28 @@ export default function VideoPlayer() {
           videoId={id}
         />
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Video</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this video? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
