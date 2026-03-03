@@ -19,7 +19,6 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
-export const Time = IDL.Int;
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -32,28 +31,15 @@ export const ShoppingItem = IDL.Record({
   'priceInCents' : IDL.Nat,
   'productDescription' : IDL.Text,
 });
-export const Rating = IDL.Record({
-  'value' : IDL.Nat,
-  'timestamp' : Time,
-  'reviewer' : IDL.Principal,
-});
+export const Time = IDL.Int;
 export const UserProfile = IDL.Record({
   'channelName' : IDL.Opt(IDL.Text),
   'name' : IDL.Text,
   'accountCreation' : Time,
 });
-export const Comment = IDL.Record({
-  'id' : IDL.Nat,
-  'content' : IDL.Text,
-  'author' : IDL.Principal,
-  'timestamp' : Time,
-});
-export const Photo = IDL.Record({
-  'title' : IDL.Text,
-  'file' : IDL.Vec(IDL.Nat8),
-  'description' : IDL.Text,
-  'uploader' : IDL.Principal,
-  'uploadTime' : Time,
+export const RazorpayConfig = IDL.Record({
+  'keyId' : IDL.Text,
+  'keySecret' : IDL.Text,
 });
 export const StripeSessionStatus = IDL.Variant({
   'completed' : IDL.Record({
@@ -61,47 +47,6 @@ export const StripeSessionStatus = IDL.Variant({
     'response' : IDL.Text,
   }),
   'failed' : IDL.Record({ 'error' : IDL.Text }),
-});
-export const SubscriptionStatus = IDL.Variant({
-  'premium' : IDL.Null,
-  'free' : IDL.Null,
-});
-export const UserStats = IDL.Record({
-  'totalVideosUploaded' : IDL.Nat,
-  'accountCreation' : Time,
-  'totalPhotosUploaded' : IDL.Nat,
-});
-export const ExternalBlob = IDL.Vec(IDL.Nat8);
-export const ExtendedVideo = IDL.Record({
-  'title' : IDL.Text,
-  'likeCount' : IDL.Nat,
-  'thumbnail' : IDL.Opt(ExternalBlob),
-  'file' : ExternalBlob,
-  'tags' : IDL.Vec(IDL.Text),
-  'description' : IDL.Text,
-  'viewCount' : IDL.Nat,
-  'commentCount' : IDL.Nat,
-  'uploader' : IDL.Principal,
-  'uploadTime' : Time,
-});
-export const VideoMetadata = IDL.Record({
-  'id' : IDL.Text,
-  'title' : IDL.Text,
-  'likeCount' : IDL.Nat,
-  'thumbnail' : IDL.Opt(ExternalBlob),
-  'tags' : IDL.Vec(IDL.Text),
-  'description' : IDL.Text,
-  'viewCount' : IDL.Nat,
-  'commentCount' : IDL.Nat,
-  'uploader' : IDL.Principal,
-  'uploadTime' : Time,
-});
-export const PhotoMetadata = IDL.Record({
-  'id' : IDL.Text,
-  'title' : IDL.Text,
-  'description' : IDL.Text,
-  'uploader' : IDL.Principal,
-  'uploadTime' : Time,
 });
 export const StripeConfiguration = IDL.Record({
   'allowedCountries' : IDL.Vec(IDL.Text),
@@ -154,117 +99,33 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'addComment' : IDL.Func(
-      [IDL.Text, IDL.Text],
-      [
-        IDL.Record({
-          'id' : IDL.Nat,
-          'content' : IDL.Text,
-          'author' : IDL.Principal,
-          'timestamp' : Time,
-        }),
-      ],
-      [],
-    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createCheckoutSession' : IDL.Func(
       [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
       [IDL.Text],
       [],
     ),
-  'deleteComment' : IDL.Func([IDL.Text, IDL.Nat], [], []),
-  'deletePhoto' : IDL.Func([IDL.Text], [], []),
-  'deleteVideo' : IDL.Func([IDL.Text], [], []),
-  'downgradeToFree' : IDL.Func([IDL.Principal], [], []),
-  'getAdRevenueForCaller' : IDL.Func([], [IDL.Float64], ['query']),
-  'getAdRevenueForVideo' : IDL.Func(
-      [IDL.Text],
-      [IDL.Record({ 'impressions' : IDL.Nat, 'totalRevenue' : IDL.Float64 })],
-      ['query'],
-    ),
-  'getAllVideoRatings' : IDL.Func([IDL.Text], [IDL.Vec(Rating)], ['query']),
-  'getAverageRating' : IDL.Func([IDL.Text], [IDL.Float64], ['query']),
+  'getAdSensePublisherId' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getChannelName' : IDL.Func([IDL.Principal], [IDL.Text], ['query']),
-  'getComments' : IDL.Func([IDL.Text], [IDL.Vec(Comment)], ['query']),
-  'getPhoto' : IDL.Func([IDL.Text], [Photo], ['query']),
-  'getRatingAnalytics' : IDL.Func(
-      [IDL.Text],
-      [
-        IDL.Record({
-          'totalRatings' : IDL.Nat,
-          'ratingBreakdown' : IDL.Vec(IDL.Nat),
-          'averageRating' : IDL.Float64,
-        }),
-      ],
-      ['query'],
-    ),
+  'getRazorpayConfig' : IDL.Func([], [IDL.Opt(RazorpayConfig)], ['query']),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
-  'getSubscriptionStatus' : IDL.Func([], [SubscriptionStatus], ['query']),
-  'getTotalAdRevenue' : IDL.Func([], [IDL.Float64], ['query']),
-  'getTotalImpressions' : IDL.Func([], [IDL.Nat], ['query']),
-  'getTotalRatings' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
-  'getUserRatings' : IDL.Func(
-      [],
-      [IDL.Vec(IDL.Tuple(IDL.Text, Rating))],
-      ['query'],
-    ),
-  'getUserStats' : IDL.Func([IDL.Principal], [UserStats], ['query']),
-  'getUserSubscriptionStatus' : IDL.Func(
-      [IDL.Principal],
-      [SubscriptionStatus],
-      ['query'],
-    ),
-  'getVideo' : IDL.Func([IDL.Text], [ExtendedVideo], ['query']),
-  'getVideoMetadata' : IDL.Func([IDL.Text], [VideoMetadata], ['query']),
-  'incrementVideoView' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isRazorpayConfiguredLegacy' : IDL.Func([], [IDL.Bool], ['query']),
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
-  'likeVideo' : IDL.Func([IDL.Text], [], []),
-  'listPhotos' : IDL.Func([], [IDL.Vec(PhotoMetadata)], ['query']),
-  'listVideos' : IDL.Func([], [IDL.Vec(VideoMetadata)], ['query']),
-  'markThumbnailGenerated' : IDL.Func([IDL.Text, ExternalBlob], [], []),
-  'rateVideo' : IDL.Func([IDL.Text, IDL.Nat], [], []),
-  'recordAdImpression' : IDL.Func([IDL.Text], [], []),
-  'removeThumbnail' : IDL.Func([IDL.Text], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'searchVideos' : IDL.Func([IDL.Text], [IDL.Vec(VideoMetadata)], ['query']),
-  'setChannelName' : IDL.Func([IDL.Text], [], []),
-  'setCustomThumbnail' : IDL.Func([IDL.Text, ExternalBlob], [], []),
+  'setAdSensePublisherId' : IDL.Func([IDL.Text], [], []),
+  'setRazorpayConfiguration' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
-  'setSubscriptionStatus' : IDL.Func(
-      [IDL.Principal, SubscriptionStatus],
-      [],
-      [],
-    ),
   'transform' : IDL.Func(
       [TransformationInput],
       [TransformationOutput],
       ['query'],
-    ),
-  'updateComment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [], []),
-  'updatePhoto' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
-  'updateVideo' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)],
-      [],
-      [],
-    ),
-  'upgradeToPremium' : IDL.Func([IDL.Principal], [], []),
-  'uploadPhoto' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
-      [IDL.Text],
-      [],
-    ),
-  'uploadVideo' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Vec(IDL.Text), ExternalBlob],
-      [IDL.Text],
-      [],
     ),
 });
 
@@ -282,7 +143,6 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
-  const Time = IDL.Int;
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -295,28 +155,15 @@ export const idlFactory = ({ IDL }) => {
     'priceInCents' : IDL.Nat,
     'productDescription' : IDL.Text,
   });
-  const Rating = IDL.Record({
-    'value' : IDL.Nat,
-    'timestamp' : Time,
-    'reviewer' : IDL.Principal,
-  });
+  const Time = IDL.Int;
   const UserProfile = IDL.Record({
     'channelName' : IDL.Opt(IDL.Text),
     'name' : IDL.Text,
     'accountCreation' : Time,
   });
-  const Comment = IDL.Record({
-    'id' : IDL.Nat,
-    'content' : IDL.Text,
-    'author' : IDL.Principal,
-    'timestamp' : Time,
-  });
-  const Photo = IDL.Record({
-    'title' : IDL.Text,
-    'file' : IDL.Vec(IDL.Nat8),
-    'description' : IDL.Text,
-    'uploader' : IDL.Principal,
-    'uploadTime' : Time,
+  const RazorpayConfig = IDL.Record({
+    'keyId' : IDL.Text,
+    'keySecret' : IDL.Text,
   });
   const StripeSessionStatus = IDL.Variant({
     'completed' : IDL.Record({
@@ -324,47 +171,6 @@ export const idlFactory = ({ IDL }) => {
       'response' : IDL.Text,
     }),
     'failed' : IDL.Record({ 'error' : IDL.Text }),
-  });
-  const SubscriptionStatus = IDL.Variant({
-    'premium' : IDL.Null,
-    'free' : IDL.Null,
-  });
-  const UserStats = IDL.Record({
-    'totalVideosUploaded' : IDL.Nat,
-    'accountCreation' : Time,
-    'totalPhotosUploaded' : IDL.Nat,
-  });
-  const ExternalBlob = IDL.Vec(IDL.Nat8);
-  const ExtendedVideo = IDL.Record({
-    'title' : IDL.Text,
-    'likeCount' : IDL.Nat,
-    'thumbnail' : IDL.Opt(ExternalBlob),
-    'file' : ExternalBlob,
-    'tags' : IDL.Vec(IDL.Text),
-    'description' : IDL.Text,
-    'viewCount' : IDL.Nat,
-    'commentCount' : IDL.Nat,
-    'uploader' : IDL.Principal,
-    'uploadTime' : Time,
-  });
-  const VideoMetadata = IDL.Record({
-    'id' : IDL.Text,
-    'title' : IDL.Text,
-    'likeCount' : IDL.Nat,
-    'thumbnail' : IDL.Opt(ExternalBlob),
-    'tags' : IDL.Vec(IDL.Text),
-    'description' : IDL.Text,
-    'viewCount' : IDL.Nat,
-    'commentCount' : IDL.Nat,
-    'uploader' : IDL.Principal,
-    'uploadTime' : Time,
-  });
-  const PhotoMetadata = IDL.Record({
-    'id' : IDL.Text,
-    'title' : IDL.Text,
-    'description' : IDL.Text,
-    'uploader' : IDL.Principal,
-    'uploadTime' : Time,
   });
   const StripeConfiguration = IDL.Record({
     'allowedCountries' : IDL.Vec(IDL.Text),
@@ -414,117 +220,33 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'addComment' : IDL.Func(
-        [IDL.Text, IDL.Text],
-        [
-          IDL.Record({
-            'id' : IDL.Nat,
-            'content' : IDL.Text,
-            'author' : IDL.Principal,
-            'timestamp' : Time,
-          }),
-        ],
-        [],
-      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createCheckoutSession' : IDL.Func(
         [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
         [IDL.Text],
         [],
       ),
-    'deleteComment' : IDL.Func([IDL.Text, IDL.Nat], [], []),
-    'deletePhoto' : IDL.Func([IDL.Text], [], []),
-    'deleteVideo' : IDL.Func([IDL.Text], [], []),
-    'downgradeToFree' : IDL.Func([IDL.Principal], [], []),
-    'getAdRevenueForCaller' : IDL.Func([], [IDL.Float64], ['query']),
-    'getAdRevenueForVideo' : IDL.Func(
-        [IDL.Text],
-        [IDL.Record({ 'impressions' : IDL.Nat, 'totalRevenue' : IDL.Float64 })],
-        ['query'],
-      ),
-    'getAllVideoRatings' : IDL.Func([IDL.Text], [IDL.Vec(Rating)], ['query']),
-    'getAverageRating' : IDL.Func([IDL.Text], [IDL.Float64], ['query']),
+    'getAdSensePublisherId' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getChannelName' : IDL.Func([IDL.Principal], [IDL.Text], ['query']),
-    'getComments' : IDL.Func([IDL.Text], [IDL.Vec(Comment)], ['query']),
-    'getPhoto' : IDL.Func([IDL.Text], [Photo], ['query']),
-    'getRatingAnalytics' : IDL.Func(
-        [IDL.Text],
-        [
-          IDL.Record({
-            'totalRatings' : IDL.Nat,
-            'ratingBreakdown' : IDL.Vec(IDL.Nat),
-            'averageRating' : IDL.Float64,
-          }),
-        ],
-        ['query'],
-      ),
+    'getRazorpayConfig' : IDL.Func([], [IDL.Opt(RazorpayConfig)], ['query']),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
-    'getSubscriptionStatus' : IDL.Func([], [SubscriptionStatus], ['query']),
-    'getTotalAdRevenue' : IDL.Func([], [IDL.Float64], ['query']),
-    'getTotalImpressions' : IDL.Func([], [IDL.Nat], ['query']),
-    'getTotalRatings' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
-    'getUserRatings' : IDL.Func(
-        [],
-        [IDL.Vec(IDL.Tuple(IDL.Text, Rating))],
-        ['query'],
-      ),
-    'getUserStats' : IDL.Func([IDL.Principal], [UserStats], ['query']),
-    'getUserSubscriptionStatus' : IDL.Func(
-        [IDL.Principal],
-        [SubscriptionStatus],
-        ['query'],
-      ),
-    'getVideo' : IDL.Func([IDL.Text], [ExtendedVideo], ['query']),
-    'getVideoMetadata' : IDL.Func([IDL.Text], [VideoMetadata], ['query']),
-    'incrementVideoView' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isRazorpayConfiguredLegacy' : IDL.Func([], [IDL.Bool], ['query']),
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
-    'likeVideo' : IDL.Func([IDL.Text], [], []),
-    'listPhotos' : IDL.Func([], [IDL.Vec(PhotoMetadata)], ['query']),
-    'listVideos' : IDL.Func([], [IDL.Vec(VideoMetadata)], ['query']),
-    'markThumbnailGenerated' : IDL.Func([IDL.Text, ExternalBlob], [], []),
-    'rateVideo' : IDL.Func([IDL.Text, IDL.Nat], [], []),
-    'recordAdImpression' : IDL.Func([IDL.Text], [], []),
-    'removeThumbnail' : IDL.Func([IDL.Text], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'searchVideos' : IDL.Func([IDL.Text], [IDL.Vec(VideoMetadata)], ['query']),
-    'setChannelName' : IDL.Func([IDL.Text], [], []),
-    'setCustomThumbnail' : IDL.Func([IDL.Text, ExternalBlob], [], []),
+    'setAdSensePublisherId' : IDL.Func([IDL.Text], [], []),
+    'setRazorpayConfiguration' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
-    'setSubscriptionStatus' : IDL.Func(
-        [IDL.Principal, SubscriptionStatus],
-        [],
-        [],
-      ),
     'transform' : IDL.Func(
         [TransformationInput],
         [TransformationOutput],
         ['query'],
-      ),
-    'updateComment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [], []),
-    'updatePhoto' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
-    'updateVideo' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text)],
-        [],
-        [],
-      ),
-    'upgradeToPremium' : IDL.Func([IDL.Principal], [], []),
-    'uploadPhoto' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
-        [IDL.Text],
-        [],
-      ),
-    'uploadVideo' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Vec(IDL.Text), ExternalBlob],
-        [IDL.Text],
-        [],
       ),
   });
 };

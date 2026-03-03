@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
@@ -14,11 +14,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Video, Upload, Loader2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
-import { ExternalBlob } from '../backend';
-import { useMemo } from 'react';
+import type { ExtendedVideo } from '../lib/types';
 
 const ACCEPTED_VIDEO_FORMATS = ['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg'];
-const MAX_FILE_SIZE_MB = 500; // 500MB limit
+const MAX_FILE_SIZE_MB = 500;
 
 export function UploadVideo() {
   const navigate = useNavigate();
@@ -30,22 +29,37 @@ export function UploadVideo() {
   const [file, setFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
-  const [uploadedVideoBlob, setUploadedVideoBlob] = useState<ExternalBlob | null>(null);
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+
   const { uploadVideo, isUploading, uploadProgress, error, isSuccess, reset } = useVideoUpload();
 
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  // Get video URL for thumbnail generation
-  const videoUrl = useMemo(() => {
-    if (!uploadedVideoBlob) return null;
-    return uploadedVideoBlob.getDirectURL();
-  }, [uploadedVideoBlob]);
+  // Build a minimal ExtendedVideo-like object for ThumbnailSelector after upload
+  const uploadedVideoForThumbnail = useMemo((): ExtendedVideo | null => {
+    if (!uploadedVideoId || !uploadedVideoUrl) return null;
+    return {
+      title,
+      description,
+      tags,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      uploader: identity?.getPrincipal() as any,
+      uploadTime: BigInt(Date.now()) * BigInt(1_000_000),
+      likeCount: BigInt(0),
+      commentCount: BigInt(0),
+      viewCount: BigInt(0),
+      thumbnail: null,
+      file: {
+        getDirectURL: () => uploadedVideoUrl,
+      },
+    };
+  }, [uploadedVideoId, uploadedVideoUrl, title, description, tags, identity]);
 
-  const validateFile = (file: File): string | null => {
-    if (!ACCEPTED_VIDEO_FORMATS.includes(file.type)) {
+  const validateFile = (f: File): string | null => {
+    if (!ACCEPTED_VIDEO_FORMATS.includes(f.type)) {
       return `Invalid file format. Please upload a video file (MP4, MOV, WebM, or OGG).`;
     }
-    const fileSizeMB = file.size / 1024 / 1024;
+    const fileSizeMB = f.size / 1024 / 1024;
     if (fileSizeMB > MAX_FILE_SIZE_MB) {
       return `File size exceeds ${MAX_FILE_SIZE_MB}MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`;
     }
@@ -56,9 +70,9 @@ export function UploadVideo() {
     setValidationError(null);
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      const error = validateFile(selectedFile);
-      if (error) {
-        setValidationError(error);
+      const err = validateFile(selectedFile);
+      if (err) {
+        setValidationError(err);
         setFile(null);
         e.target.value = '';
       } else {
@@ -71,27 +85,29 @@ export function UploadVideo() {
     e.preventDefault();
     if (!file || !title.trim()) return;
 
-    const error = validateFile(file);
-    if (error) {
-      setValidationError(error);
+    const err = validateFile(file);
+    if (err) {
+      setValidationError(err);
       return;
     }
 
     try {
-      const result = await uploadVideo({ title, description, file, tags });
-      if (result) {
-        setUploadedVideoId(result.videoId);
-        setUploadedVideoBlob(result.videoBlob);
+      const videoId = await uploadVideo({ title, description, file, tags });
+      if (videoId) {
+        setUploadedVideoId(videoId);
+        // Create a local object URL for the uploaded file so ThumbnailSelector can show the video
+        const localUrl = URL.createObjectURL(file);
+        setUploadedVideoUrl(localUrl);
         queryClient.invalidateQueries({ queryKey: ['videos'] });
       }
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      // Error handled by mutation onError
     }
   };
 
   const handleRetry = () => {
     if (file && title.trim()) {
-      handleSubmit(new Event('submit') as any);
+      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
     }
   };
 
@@ -102,7 +118,10 @@ export function UploadVideo() {
     setFile(null);
     setValidationError(null);
     setUploadedVideoId(null);
-    setUploadedVideoBlob(null);
+    if (uploadedVideoUrl) {
+      URL.revokeObjectURL(uploadedVideoUrl);
+    }
+    setUploadedVideoUrl(null);
     reset();
   };
 
@@ -126,15 +145,14 @@ export function UploadVideo() {
   }
 
   // Show thumbnail selector after successful upload
-  if (isSuccess && uploadedVideoId && videoUrl) {
+  if (isSuccess && uploadedVideoId && uploadedVideoForThumbnail) {
     return (
       <div className="container py-8 max-w-4xl mx-auto">
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
             <ThumbnailSelector
               videoId={uploadedVideoId}
-              videoUrl={videoUrl}
-              onComplete={handleThumbnailComplete}
+              video={uploadedVideoForThumbnail}
             />
           </div>
           <div className="md:col-span-1">
@@ -150,13 +168,12 @@ export function UploadVideo() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <Button
-                  variant="outline"
-                  onClick={() => handleThumbnailComplete()}
-                  className="w-full"
-                >
-                  Skip Thumbnail
+              <CardContent className="space-y-2">
+                <Button onClick={handleThumbnailComplete} className="w-full">
+                  Go to Video
+                </Button>
+                <Button variant="outline" onClick={handleUploadAnother} className="w-full">
+                  Upload Another
                 </Button>
               </CardContent>
             </Card>
@@ -242,7 +259,7 @@ export function UploadVideo() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tags">Tags</Label>
+                  <Label>Tags</Label>
                   <TagInput tags={tags} onChange={setTags} disabled={isUploading} />
                 </div>
 
@@ -260,19 +277,17 @@ export function UploadVideo() {
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="flex items-center justify-between">
-                      <span>{error.message}</span>
-                      {error.type === 'network_error' && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleRetry}
-                          className="ml-4"
-                        >
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Retry
-                        </Button>
-                      )}
+                      <span>{error}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRetry}
+                        className="ml-4 flex-shrink-0"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Retry
+                      </Button>
                     </AlertDescription>
                   </Alert>
                 )}

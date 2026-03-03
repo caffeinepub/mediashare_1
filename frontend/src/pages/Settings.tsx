@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Crown, User, Settings as SettingsIcon, Check, Loader2, Shield } from 'lucide-react';
+import {
+  Crown,
+  User,
+  Settings as SettingsIcon,
+  Check,
+  Loader2,
+  Shield,
+  CreditCard,
+  IndianRupee,
+  Megaphone,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +21,13 @@ import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from '../hooks/useGetCallerUserProfile';
 import { useSaveCallerUserProfile } from '../hooks/useSaveCallerUserProfile';
 import { useGetUserSubscriptionStatus } from '../hooks/useGetUserSubscriptionStatus';
+import { useIsStripeConfigured } from '../hooks/useStripeConfig';
+import { useIsRazorpayConfigured } from '../hooks/useRazorpayConfig';
+import { useGetAdSensePublisherId, useSetAdSensePublisherId } from '../hooks/useAdSenseConfig';
+import { StripeSetupModal } from '../components/StripeSetupModal';
+import { RazorpaySetupModal } from '../components/RazorpaySetupModal';
 import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -20,8 +36,16 @@ export default function Settings() {
   const { data: subscriptionData, isLoading: subscriptionLoading } = useGetUserSubscriptionStatus();
   const saveProfile = useSaveCallerUserProfile();
 
+  const { data: isStripeConfigured } = useIsStripeConfigured();
+  const { data: isRazorpayConfigured } = useIsRazorpayConfigured();
+  const { data: adSensePublisherId } = useGetAdSensePublisherId();
+  const setAdSensePublisherId = useSetAdSensePublisherId();
+
   const [name, setName] = useState('');
   const [channelName, setChannelName] = useState('');
+  const [showStripeSetup, setShowStripeSetup] = useState(false);
+  const [showRazorpaySetup, setShowRazorpaySetup] = useState(false);
+  const [publisherIdInput, setPublisherIdInput] = useState('');
 
   useEffect(() => {
     if (userProfile) {
@@ -30,6 +54,12 @@ export default function Settings() {
     }
   }, [userProfile]);
 
+  useEffect(() => {
+    if (adSensePublisherId) {
+      setPublisherIdInput(adSensePublisherId);
+    }
+  }, [adSensePublisherId]);
+
   const handleSaveProfile = async () => {
     if (!userProfile) return;
     await saveProfile.mutateAsync({
@@ -37,6 +67,19 @@ export default function Settings() {
       channelName: channelName || undefined,
       accountCreation: userProfile.accountCreation,
     });
+  };
+
+  const handleSaveAdSense = async () => {
+    const trimmed = publisherIdInput.trim();
+    if (!trimmed) {
+      toast.error('Please enter a publisher ID');
+      return;
+    }
+    if (!trimmed.startsWith('ca-pub-')) {
+      toast.error('Publisher ID must start with ca-pub-');
+      return;
+    }
+    await setAdSensePublisherId.mutateAsync(trimmed);
   };
 
   if (!identity) {
@@ -125,11 +168,127 @@ export default function Settings() {
                     onClick={() => navigate({ to: '/upgrade' })}
                   >
                     <Crown className="w-4 h-4 mr-2" />
-                    Upgrade to Premium — $9.99/mo
+                    Upgrade to Premium — $9.99/mo or ₹499/mo
                   </Button>
                 )}
               </>
             )}
+          </CardContent>
+        </Card>
+
+        <Separator />
+
+        {/* Stripe Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="w-4 h-4 text-primary" />
+              Stripe Payments (USD)
+            </CardTitle>
+            <CardDescription>Configure Stripe for USD payment processing</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground font-medium">
+                  Status:{' '}
+                  <span className={isStripeConfigured ? 'text-green-600' : 'text-muted-foreground'}>
+                    {isStripeConfigured ? 'Configured ✓' : 'Not configured'}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Accept credit/debit card payments in USD
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowStripeSetup(true)}>
+                {isStripeConfigured ? 'Reconfigure' : 'Setup Stripe'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Razorpay Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <IndianRupee className="w-4 h-4 text-primary" />
+              Razorpay Payments (INR)
+            </CardTitle>
+            <CardDescription>Configure Razorpay for INR payment processing in India</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground font-medium">
+                  Status:{' '}
+                  <span className={isRazorpayConfigured ? 'text-green-600' : 'text-muted-foreground'}>
+                    {isRazorpayConfigured ? 'Configured ✓' : 'Not configured'}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Accept UPI, cards, and NetBanking payments in INR
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowRazorpaySetup(true)}>
+                {isRazorpayConfigured ? 'Reconfigure' : 'Setup Razorpay'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AdSense Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Megaphone className="w-4 h-4 text-primary" />
+              Google AdSense
+            </CardTitle>
+            <CardDescription>
+              Configure your Google AdSense publisher ID to display ads and earn revenue
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="publisher-id">Publisher ID</Label>
+              <Input
+                id="publisher-id"
+                type="text"
+                placeholder="ca-pub-XXXXXXXXXXXXXXXX"
+                value={publisherIdInput}
+                onChange={(e) => setPublisherIdInput(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Find your Publisher ID in your{' '}
+                <a
+                  href="https://adsense.google.com/adsense/answer/105516"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                >
+                  AdSense account
+                </a>
+                . Format: <code>ca-pub-XXXXXXXXXXXXXXXX</code>
+              </p>
+            </div>
+            {adSensePublisherId && (
+              <p className="text-xs text-green-600 font-medium">
+                ✓ Currently configured: {adSensePublisherId}
+              </p>
+            )}
+            <Button
+              onClick={handleSaveAdSense}
+              disabled={setAdSensePublisherId.isPending || !publisherIdInput.trim()}
+              size="sm"
+            >
+              {setAdSensePublisherId.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Publisher ID'
+              )}
+            </Button>
           </CardContent>
         </Card>
 
@@ -212,6 +371,13 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      {showStripeSetup && (
+        <StripeSetupModal open={showStripeSetup} onClose={() => setShowStripeSetup(false)} />
+      )}
+      {showRazorpaySetup && (
+        <RazorpaySetupModal open={showRazorpaySetup} onClose={() => setShowRazorpaySetup(false)} />
+      )}
     </div>
   );
 }

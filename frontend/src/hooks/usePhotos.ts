@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { PhotoMetadata } from '../backend';
+import type { PhotoMetadata } from '../lib/types';
 
 export function usePhotos() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching } = useActor();
 
   return useQuery<PhotoMetadata[]>({
     queryKey: ['photos'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.listPhotos();
+      if (!actor) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).listPhotos();
     },
-    enabled: !!actor && !actorFetching,
-    retry: false,
+    enabled: !!actor && !isFetching,
   });
 }

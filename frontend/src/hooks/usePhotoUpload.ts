@@ -3,48 +3,42 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { toast } from 'sonner';
 
+interface UploadPhotoParams {
+  title: string;
+  description: string;
+  file: File;
+}
+
 export function usePhotoUpload() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const mutation = useMutation({
-    mutationFn: async ({
-      file,
-      title,
-      description,
-      onProgress,
-    }: {
-      file: File;
-      title: string;
-      description: string;
-      onProgress?: (progress: number) => void;
-    }) => {
-      if (!actor) throw new Error('Actor not initialized');
+    mutationFn: async ({ title, description, file }: UploadPhotoParams) => {
+      if (!actor) throw new Error('Actor not available');
 
-      // Convert File to Uint8Array
+      setUploadProgress(10);
+
       const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      // Update progress
       setUploadProgress(50);
-      if (onProgress) onProgress(50);
 
-      const photoId = await actor.uploadPhoto(title, description, uint8Array);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const photoId = await (actor as any).uploadPhoto(title, description, uint8Array);
 
       setUploadProgress(100);
-      if (onProgress) onProgress(100);
-
-      return photoId;
+      return photoId as string;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['photos'] });
       toast.success('Photo uploaded successfully!');
       setUploadProgress(0);
     },
-    onError: (error: Error) => {
-      console.error('Photo upload error:', error);
-      toast.error(`Failed to upload photo: ${error.message}`);
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Upload failed.';
+      toast.error('Upload failed', { description: message });
       setUploadProgress(0);
     },
   });
@@ -53,7 +47,7 @@ export function usePhotoUpload() {
     uploadPhoto: mutation.mutateAsync,
     isUploading: mutation.isPending,
     uploadProgress,
-    error: mutation.error?.message,
+    error: mutation.error instanceof Error ? mutation.error.message : null,
     isSuccess: mutation.isSuccess,
   };
 }

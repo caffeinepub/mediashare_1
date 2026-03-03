@@ -1,6 +1,9 @@
 import React from 'react';
-import { DollarSign, TrendingUp, Eye, Video, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useGetAdRevenueForCaller } from '../hooks/useGetAdRevenueForCaller';
+import { useVideos } from '../hooks/useVideos';
+import { useGetAdRevenueForVideo } from '../hooks/useGetAdRevenueForVideo';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -10,84 +13,76 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useGetAdRevenueForCaller } from '../hooks/useGetAdRevenueForCaller';
-import { useGetAdRevenueForVideo } from '../hooks/useGetAdRevenueForVideo';
-import { useVideos } from '../hooks/useVideos';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { VideoMetadata } from '../backend';
+import { DollarSign, TrendingUp, Eye } from 'lucide-react';
+import type { VideoMetadata } from '../lib/types';
 
 function VideoRevenueRow({ video }: { video: VideoMetadata }) {
-  const { data, isLoading } = useGetAdRevenueForVideo(video.id);
+  const { data: revenueData } = useGetAdRevenueForVideo(video.id);
 
   return (
     <TableRow>
       <TableCell className="font-medium max-w-[200px] truncate">{video.title}</TableCell>
       <TableCell className="text-right">
-        {isLoading ? (
-          <Skeleton className="h-4 w-12 ml-auto" />
-        ) : (
-          Number(data?.impressions ?? 0).toLocaleString()
-        )}
+        {revenueData ? Number(revenueData.impressions).toLocaleString() : '—'}
       </TableCell>
       <TableCell className="text-right">
-        {isLoading ? (
-          <Skeleton className="h-4 w-16 ml-auto" />
-        ) : (
+        {revenueData ? (
           <span className="text-green-600 dark:text-green-400 font-medium">
-            ${(data?.totalRevenue ?? 0).toFixed(2)}
+            ${revenueData.totalRevenue.toFixed(2)}
           </span>
+        ) : (
+          '—'
         )}
       </TableCell>
     </TableRow>
   );
 }
 
-export default function AdRevenueDashboard() {
+export function AdRevenueDashboard() {
   const { identity } = useInternetIdentity();
-  const { data: totalRevenue, isLoading: revenueLoading } = useGetAdRevenueForCaller(!!identity);
+  const { data: totalRevenue, isLoading: revenueLoading } = useGetAdRevenueForCaller();
   const { data: videos, isLoading: videosLoading } = useVideos();
 
   if (!identity) return null;
 
-  const myVideos = videos?.filter(
-    (v) => v.uploader.toString() === identity.getPrincipal().toString()
-  ) ?? [];
+  const myVideos =
+    videos?.filter((v) => v.uploader.toString() === identity.getPrincipal().toString()) ?? [];
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-green-500" />
               Total Ad Earnings
             </CardTitle>
-            <DollarSign className="w-4 h-4 text-green-500" />
           </CardHeader>
           <CardContent>
             {revenueLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold text-foreground">
                 ${(totalRevenue ?? 0).toFixed(2)}
-              </div>
+              </p>
             )}
             <p className="text-xs text-muted-foreground mt-1">Lifetime earnings from ad impressions</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Eye className="w-4 h-4 text-primary" />
               Videos Monetized
             </CardTitle>
-            <Video className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
             {videosLoading ? (
               <Skeleton className="h-8 w-12" />
             ) : (
-              <div className="text-2xl font-bold text-foreground">{myVideos.length}</div>
+              <p className="text-2xl font-bold text-foreground">{myVideos.length}</p>
             )}
             <p className="text-xs text-muted-foreground mt-1">Videos earning ad revenue</p>
           </CardContent>
@@ -100,7 +95,8 @@ export default function AdRevenueDashboard() {
           <div className="flex items-center gap-2 text-sm">
             <TrendingUp className="w-4 h-4 text-primary" />
             <span className="text-muted-foreground">
-              Current CPM rate: <span className="font-semibold text-foreground">$2.00</span> per 1,000 impressions
+              Current CPM rate:{' '}
+              <span className="font-semibold text-foreground">$2.00</span> per 1,000 impressions
             </span>
           </div>
         </CardContent>
@@ -109,13 +105,7 @@ export default function AdRevenueDashboard() {
       {/* Per-Video Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Eye className="w-4 h-4" />
-            Per-Video Revenue Breakdown
-          </CardTitle>
-          <CardDescription>
-            Ad impressions and earnings for each of your videos
-          </CardDescription>
+          <CardTitle className="text-base">Per-Video Revenue Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
           {videosLoading ? (
@@ -125,16 +115,14 @@ export default function AdRevenueDashboard() {
               ))}
             </div>
           ) : myVideos.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Video className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No videos uploaded yet.</p>
-              <p className="text-xs mt-1">Upload videos to start earning ad revenue.</p>
-            </div>
+            <p className="text-sm text-muted-foreground text-center py-6">
+              No videos uploaded yet. Upload videos to start earning ad revenue.
+            </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Video Title</TableHead>
+                  <TableHead>Video</TableHead>
                   <TableHead className="text-right">Impressions</TableHead>
                   <TableHead className="text-right">Earnings</TableHead>
                 </TableRow>
@@ -151,3 +139,5 @@ export default function AdRevenueDashboard() {
     </div>
   );
 }
+
+export default AdRevenueDashboard;

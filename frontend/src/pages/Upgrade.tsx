@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Crown, Check, Zap, Shield, Star, AlertCircle, Loader2 } from 'lucide-react';
+import { Crown, Check, Zap, Shield, Star, AlertCircle, Loader2, IndianRupee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { useCreateCheckoutSession } from '../hooks/useCreateCheckoutSession';
 import { useGetUserSubscriptionStatus } from '../hooks/useGetUserSubscriptionStatus';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { StripeSetupModal } from '../components/StripeSetupModal';
+import { RazorpaySetupModal } from '../components/RazorpaySetupModal';
 import { useIsStripeConfigured } from '../hooks/useStripeConfig';
+import { useIsRazorpayConfigured } from '../hooks/useRazorpayConfig';
+import { useRazorpayCheckout } from '../hooks/useRazorpayCheckout';
 import type { ShoppingItem } from '../backend';
 
 const premiumFeatures = [
@@ -34,13 +38,16 @@ export default function Upgrade() {
   const { identity } = useInternetIdentity();
   const { data: subscriptionData } = useGetUserSubscriptionStatus();
   const { data: isStripeConfigured } = useIsStripeConfigured();
+  const { data: isRazorpayConfigured } = useIsRazorpayConfigured();
   const createCheckoutSession = useCreateCheckoutSession();
+  const razorpayCheckout = useRazorpayCheckout();
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [showStripeSetup, setShowStripeSetup] = useState(false);
+  const [showRazorpaySetup, setShowRazorpaySetup] = useState(false);
 
   const isPremium = subscriptionData?.tier === 'premium';
 
-  const handleUpgrade = async () => {
+  const handleStripeUpgrade = async () => {
     setCheckoutError(null);
 
     if (!identity) {
@@ -75,9 +82,33 @@ export default function Upgrade() {
     }
   };
 
+  const handleRazorpayUpgrade = async () => {
+    setCheckoutError(null);
+
+    if (!identity) {
+      navigate({ to: '/' });
+      return;
+    }
+
+    if (!isRazorpayConfigured) {
+      setShowRazorpaySetup(true);
+      return;
+    }
+
+    try {
+      // ₹499 = 49900 paise
+      await razorpayCheckout.mutateAsync({ keyId: '', amountInPaise: 49900 });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Payment failed. Please try again.';
+      if (message !== 'Payment dismissed') {
+        setCheckoutError(message);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-4">
@@ -108,7 +139,7 @@ export default function Upgrade() {
         )}
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
           {/* Free Plan */}
           <Card className="border-border">
             <CardHeader>
@@ -133,7 +164,7 @@ export default function Upgrade() {
             </CardContent>
           </Card>
 
-          {/* Premium Plan */}
+          {/* Premium Plan — Stripe (USD) */}
           <Card className="border-primary/50 shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 left-0 h-1 bg-primary" />
             <CardHeader>
@@ -142,7 +173,7 @@ export default function Upgrade() {
                   <Crown className="w-5 h-5 text-primary" />
                   Premium
                 </CardTitle>
-                <Badge className="bg-primary text-primary-foreground">Best Value</Badge>
+                <Badge className="bg-primary text-primary-foreground">USD</Badge>
               </div>
               <CardDescription>
                 <span className="text-3xl font-bold text-foreground">$9.99</span>
@@ -162,7 +193,7 @@ export default function Upgrade() {
                 <Button
                   className="w-full"
                   size="lg"
-                  onClick={handleUpgrade}
+                  onClick={handleStripeUpgrade}
                   disabled={createCheckoutSession.isPending}
                 >
                   {createCheckoutSession.isPending ? (
@@ -173,7 +204,7 @@ export default function Upgrade() {
                   ) : (
                     <>
                       <Zap className="w-4 h-4 mr-2" />
-                      Go Premium — $9.99/mo
+                      Pay with Card — $9.99
                     </>
                   )}
                 </Button>
@@ -186,13 +217,74 @@ export default function Upgrade() {
               )}
             </CardContent>
           </Card>
+
+          {/* Premium Plan — Razorpay (INR) */}
+          {(isRazorpayConfigured || !isRazorpayConfigured) && (
+            <Card className="border-orange-500/50 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 left-0 h-1 bg-orange-500" />
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <IndianRupee className="w-5 h-5 text-orange-500" />
+                    Premium
+                  </CardTitle>
+                  <Badge className="bg-orange-500 text-white">INR</Badge>
+                </div>
+                <CardDescription>
+                  <span className="text-3xl font-bold text-foreground">₹499</span>
+                  <span className="text-muted-foreground">/month</span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  {premiumFeatures.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-sm">
+                      <Check className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                {!isPremium && (
+                  <Button
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                    size="lg"
+                    onClick={handleRazorpayUpgrade}
+                    disabled={razorpayCheckout.isPending}
+                  >
+                    {razorpayCheckout.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <IndianRupee className="w-4 h-4 mr-2" />
+                        Pay with Razorpay — ₹499
+                      </>
+                    )}
+                  </Button>
+                )}
+                {isPremium && (
+                  <Button className="w-full" size="lg" variant="outline" disabled>
+                    <Crown className="w-4 h-4 mr-2" />
+                    Already Premium
+                  </Button>
+                )}
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  UPI · Cards · NetBanking · Wallets
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
+
+        <Separator className="mb-8" />
 
         {/* Trust Badges */}
         <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
-            Secure payment via Stripe
+            Secure payment via Stripe &amp; Razorpay
           </div>
           <div className="flex items-center gap-2">
             <Star className="w-4 h-4" />
@@ -206,10 +298,10 @@ export default function Upgrade() {
       </div>
 
       {showStripeSetup && (
-        <StripeSetupModal
-          open={showStripeSetup}
-          onClose={() => setShowStripeSetup(false)}
-        />
+        <StripeSetupModal open={showStripeSetup} onClose={() => setShowStripeSetup(false)} />
+      )}
+      {showRazorpaySetup && (
+        <RazorpaySetupModal open={showRazorpaySetup} onClose={() => setShowRazorpaySetup(false)} />
       )}
     </div>
   );

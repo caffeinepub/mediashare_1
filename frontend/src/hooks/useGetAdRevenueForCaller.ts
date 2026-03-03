@@ -1,16 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 
-export function useGetAdRevenueForCaller(enabled = true) {
-  const { actor, isFetching: actorFetching } = useActor();
+export function useGetAdRevenueForCaller() {
+  const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<number>({
     queryKey: ['adRevenueForCaller'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getAdRevenueForCaller();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAdRevenueForCaller();
     },
-    enabled: !!actor && !actorFetching && enabled,
-    staleTime: 30_000,
+    enabled: !!actor && !isFetching && !!identity,
   });
 }

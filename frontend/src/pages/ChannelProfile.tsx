@@ -1,24 +1,22 @@
-import { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { Principal } from '@dfinity/principal';
 import { useVideos } from '../hooks/useVideos';
-import { usePhotos } from '../hooks/usePhotos';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useChannelName } from '../hooks/useChannelName';
 import { useUserStats } from '../hooks/useUserStats';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useVideo } from '../hooks/useVideo';
 import { VideoCard } from '../components/VideoCard';
-import { PhotoCard } from '../components/PhotoCard';
 import { DeleteVideoButton } from '../components/DeleteVideoButton';
 import { VideoEditModal } from '../components/VideoEditModal';
+import { useVideo } from '../hooks/useVideo';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ArrowLeft, User, Video, Image, Calendar, Edit } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { VideoMetadata } from '../backend';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Edit2, Video, Calendar, Users } from 'lucide-react';
+import { formatTimeAgo } from '../utils/formatters';
+import type { VideoMetadata, ExtendedVideo } from '../lib/types';
 
-// Edit modal wrapper that fetches the full ExtendedVideo
+// Wrapper that fetches full ExtendedVideo before opening edit modal
 function VideoEditModalWrapper({
   videoId,
   open,
@@ -28,242 +26,161 @@ function VideoEditModalWrapper({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { data: video, isLoading } = useVideo(videoId);
-
-  if (!open) return null;
-  if (isLoading || !video) return null;
-
+  const { data: video } = useVideo(videoId);
+  if (!video) return null;
   return (
     <VideoEditModal
-      open={open}
-      onOpenChange={onOpenChange}
       video={video}
       videoId={videoId}
+      open={open}
+      onOpenChange={onOpenChange}
     />
   );
 }
 
-// Video card with owner actions (edit + delete) — always visible
-function VideoCardWithOwnerActions({
-  video,
-  onEdit,
-}: {
-  video: VideoMetadata;
-  onEdit: (videoId: string) => void;
-}) {
-  return (
-    <div className="relative">
-      <VideoCard video={video} />
-      <div className="absolute top-2 right-2 flex gap-1">
-        <Button
-          size="icon"
-          variant="secondary"
-          className="h-8 w-8 shadow-md"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onEdit(video.id);
-          }}
-          title="Edit video"
-        >
-          <Edit className="h-3.5 w-3.5" />
-        </Button>
-        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-          <DeleteVideoButton
-            videoId={video.id}
-            variant="secondary"
-            size="icon"
-            showLabel={false}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ChannelProfile() {
-  const { principal: principalParam } = useParams({ from: '/channel/$principal' });
+export default function ChannelProfile() {
+  const { principal: principalStr } = useParams({ from: '/channel/$principal' });
   const navigate = useNavigate();
   const { identity } = useInternetIdentity();
-
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
 
-  // Parse principal first, but always call hooks
-  const principal = useMemo(() => {
-    try {
-      return Principal.fromText(principalParam);
-    } catch (error) {
-      return null;
-    }
-  }, [principalParam]);
+  let principal: Principal | undefined;
+  try {
+    principal = Principal.fromText(principalStr);
+  } catch {
+    principal = undefined;
+  }
 
-  // Check if the current user is the channel owner
-  const isOwner = useMemo(() => {
-    if (!identity || !principal) return false;
-    return identity.getPrincipal().toString() === principal.toString();
-  }, [identity, principal]);
-
-  // Always call hooks unconditionally
-  const { data: channelName, isLoading: channelLoading } = useChannelName(principal || Principal.anonymous());
-  const { data: userStats, isLoading: statsLoading } = useUserStats(principal || Principal.anonymous());
+  const { data: channelName, isLoading: channelLoading } = useChannelName(principal);
+  const { data: userStats, isLoading: statsLoading } = useUserStats(principal);
   const { data: allVideos, isLoading: videosLoading } = useVideos();
-  const { data: allPhotos, isLoading: photosLoading } = usePhotos();
 
-  const isLoading = channelLoading || statsLoading || videosLoading || photosLoading;
+  const isOwner =
+    identity && principal
+      ? identity.getPrincipal().toString() === principal.toString()
+      : false;
 
-  // Handle invalid principal after hooks
-  if (!principal) {
-    return (
-      <div className="container py-16">
-        <Alert variant="destructive">
-          <AlertDescription>Invalid principal ID</AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate({ to: '/' })} className="mt-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Button>
-      </div>
-    );
-  }
+  const channelVideos: VideoMetadata[] =
+    allVideos?.filter((v) => v.uploader.toString() === principalStr) ?? [];
 
-  if (isLoading) {
-    return (
-      <div className="container py-16 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Loading channel...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!userStats) {
-    return (
-      <div className="container py-16">
-        <Alert variant="destructive">
-          <AlertDescription>User not found</AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate({ to: '/' })} className="mt-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Button>
-      </div>
-    );
-  }
-
-  const userVideos = allVideos?.filter(video => video.uploader.toString() === principal.toString()) || [];
-  const userPhotos = allPhotos?.filter(photo => photo.uploader.toString() === principal.toString()) || [];
+  const displayName = channelName ?? principalStr.slice(0, 12) + '...';
 
   return (
-    <div className="container py-8">
-      <Button variant="ghost" onClick={() => navigate({ to: '/' })} className="mb-6">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Channel Header */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden mb-8">
+        {/* Banner */}
+        <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/5" />
 
-      <div className="grid lg:grid-cols-3 gap-6 mb-8">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
-                <User className="w-10 h-10 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">{channelName || 'Unknown Channel'}</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {principal.toString().slice(0, 20)}...
-                </p>
+        {/* Profile Info */}
+        <div className="px-6 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-8 mb-4">
+            <div className="w-20 h-20 rounded-full bg-primary/10 border-4 border-card flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl font-bold text-primary">
+                {displayName.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              {channelLoading ? (
+                <Skeleton className="h-7 w-40 mb-2" />
+              ) : (
+                <h1 className="text-2xl font-bold text-foreground truncate">{displayName}</h1>
+              )}
+              <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
+                {statsLoading ? (
+                  <Skeleton className="h-4 w-32" />
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1">
+                      <Video className="w-3.5 h-3.5" />
+                      {channelVideos.length} videos
+                    </span>
+                    {userStats?.accountCreation && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Joined {formatTimeAgo(userStats.accountCreation)}
+                      </span>
+                    )}
+                  </>
+                )}
               </div>
             </div>
-          </CardHeader>
-        </Card>
+            {isOwner && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate({ to: '/settings' })}
+                className="flex-shrink-0"
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit Channel
+              </Button>
+            )}
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Statistics</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-chart-1/20 flex items-center justify-center">
-                <Video className="w-5 h-5 text-chart-1" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Videos</p>
-                <p className="text-lg font-semibold">{Number(userStats.totalVideosUploaded)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-chart-2/20 flex items-center justify-center">
-                <Image className="w-5 h-5 text-chart-2" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Photos</p>
-                <p className="text-lg font-semibold">{Number(userStats.totalPhotosUploaded)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Joined</p>
-                <p className="text-sm font-medium">
-                  {new Date(Number(userStats.accountCreation) / 1000000).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {isOwner && (
+            <Badge variant="secondary" className="text-xs">
+              <Users className="w-3 h-3 mr-1" />
+              Your Channel
+            </Badge>
+          )}
+        </div>
       </div>
 
-      <Tabs defaultValue="videos" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="videos">Videos ({userVideos.length})</TabsTrigger>
-          <TabsTrigger value="photos">Photos ({userPhotos.length})</TabsTrigger>
-        </TabsList>
+      {/* Videos Grid */}
+      <div>
+        <h2 className="text-lg font-semibold text-foreground mb-4">
+          Videos ({channelVideos.length})
+        </h2>
 
-        <TabsContent value="videos" className="mt-6">
-          {userVideos.length === 0 ? (
-            <div className="text-center py-16">
-              <Video className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-xl font-semibold mb-2">No videos yet</h2>
-              <p className="text-muted-foreground">This channel hasn't uploaded any videos.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {userVideos.map((video) =>
-                isOwner ? (
-                  <VideoCardWithOwnerActions
-                    key={video.id}
-                    video={video}
-                    onEdit={(videoId) => setEditingVideoId(videoId)}
-                  />
-                ) : (
-                  <VideoCard key={video.id} video={video} />
-                )
-              )}
-            </div>
-          )}
-        </TabsContent>
+        {videosLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="aspect-video rounded-xl" />
+            ))}
+          </div>
+        ) : channelVideos.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <Video className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No videos uploaded yet.</p>
+            {isOwner && (
+              <Button
+                className="mt-4"
+                onClick={() => navigate({ to: '/upload-video' })}
+              >
+                Upload Your First Video
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {channelVideos.map((video) => (
+              <div key={video.id} className="relative group">
+                <VideoCard video={video} />
+                {isOwner && (
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-100">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="w-7 h-7"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingVideoId(video.id);
+                      }}
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <DeleteVideoButton videoId={video.id} variant="secondary" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-        <TabsContent value="photos" className="mt-6">
-          {userPhotos.length === 0 ? (
-            <div className="text-center py-16">
-              <Image className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-xl font-semibold mb-2">No photos yet</h2>
-              <p className="text-muted-foreground">This channel hasn't uploaded any photos.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {userPhotos.map((photo) => (
-                <PhotoCard key={photo.id} photo={photo} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {/* Video Edit Modal */}
+      {/* Edit Modal */}
       {editingVideoId && (
         <VideoEditModalWrapper
           videoId={editingVideoId}

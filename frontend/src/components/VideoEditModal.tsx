@@ -1,229 +1,102 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { TagInput } from './TagInput';
-import { ThumbnailSelector } from './ThumbnailSelector';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2 } from 'lucide-react';
 import { useUpdateVideo } from '../hooks/useUpdateVideo';
-import { useRemoveThumbnail } from '../hooks/useRemoveThumbnail';
-import { Loader2, Save, Image as ImageIcon, Trash2 } from 'lucide-react';
-import type { ExtendedVideo } from '../backend';
+import { TagInput } from './TagInput';
+import { VideoSettings } from './VideoSettings';
+import type { ExtendedVideo } from '../lib/types';
 
 interface VideoEditModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   video: ExtendedVideo;
   videoId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function VideoEditModal({ open, onOpenChange, video, videoId }: VideoEditModalProps) {
+export function VideoEditModal({ video, videoId, open, onOpenChange }: VideoEditModalProps) {
   const [title, setTitle] = useState(video.title);
   const [description, setDescription] = useState(video.description);
-  const [tags, setTags] = useState<string[]>(video.tags);
-  const [showThumbnailSelector, setShowThumbnailSelector] = useState(false);
-  const [activeTab, setActiveTab] = useState('details');
+  const [tags, setTags] = useState<string[]>(video.tags ?? []);
+  const updateVideo = useUpdateVideo();
 
-  const { mutate: updateVideo, isPending: isUpdating } = useUpdateVideo();
-  const { mutate: removeThumbnail, isPending: isRemoving } = useRemoveThumbnail();
-
-  const videoUrl = video.file.getDirectURL();
-
-  // Reset form when video changes
-  useEffect(() => {
-    setTitle(video.title);
-    setDescription(video.description);
-    setTags(video.tags);
-    setShowThumbnailSelector(false);
-  }, [video]);
-
-  const handleSave = () => {
-    if (!title.trim()) {
-      return;
-    }
-
-    updateVideo(
-      { videoId, title: title.trim(), description: description.trim(), tags },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-        },
-      }
-    );
+  const handleSave = async () => {
+    await updateVideo.mutateAsync({ videoId, title, description, tags });
+    onOpenChange(false);
   };
-
-  const handleRemoveThumbnail = () => {
-    removeThumbnail(videoId, {
-      onSuccess: () => {
-        setShowThumbnailSelector(false);
-      },
-    });
-  };
-
-  const handleThumbnailComplete = () => {
-    setShowThumbnailSelector(false);
-    setActiveTab('details');
-  };
-
-  const hasChanges =
-    title !== video.title ||
-    description !== video.description ||
-    JSON.stringify(tags) !== JSON.stringify(video.tags);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Video</DialogTitle>
-          <DialogDescription>
-            Update your video's information, thumbnail, and tags
-          </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="thumbnail">Thumbnail</TabsTrigger>
+        <Tabs defaultValue="details">
+          <TabsList className="w-full">
+            <TabsTrigger value="details" className="flex-1">
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="thumbnail" className="flex-1">
+              Thumbnail
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="edit-title">Title</Label>
               <Input
-                id="title"
+                id="edit-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter video title"
-                disabled={isUpdating}
+                placeholder="Video title"
               />
-              {!title.trim() && (
-                <p className="text-xs text-destructive">Title is required</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="edit-description">Description</Label>
               <Textarea
-                id="description"
+                id="edit-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter video description"
-                rows={5}
-                disabled={isUpdating}
+                placeholder="Video description"
+                rows={4}
               />
             </div>
 
             <div className="space-y-2">
               <Label>Tags</Label>
-              <TagInput tags={tags} onChange={setTags} disabled={isUpdating} />
+              <TagInput tags={tags} onChange={setTags} />
             </div>
 
-            <div className="flex gap-2 pt-4">
-              <Button
-                onClick={handleSave}
-                disabled={!title.trim() || isUpdating || !hasChanges}
-                className="flex-1"
-              >
-                {isUpdating ? (
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={updateVideo.isPending || !title.trim()}>
+                {updateVideo.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Saving...
                   </>
                 ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </>
+                  'Save Changes'
                 )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isUpdating}
-              >
-                Cancel
               </Button>
             </div>
           </TabsContent>
 
-          <TabsContent value="thumbnail" className="space-y-4 mt-4">
-            {showThumbnailSelector ? (
-              <div className="space-y-4">
-                <ThumbnailSelector
-                  videoId={videoId}
-                  videoUrl={videoUrl}
-                  onComplete={handleThumbnailComplete}
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => setShowThumbnailSelector(false)}
-                  className="w-full"
-                >
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {video.thumbnail && (
-                  <div className="space-y-3">
-                    <Label>Current Thumbnail</Label>
-                    <div className="aspect-video rounded-lg overflow-hidden border">
-                      <img
-                        src={video.thumbnail.getDirectURL()}
-                        alt="Current thumbnail"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {!video.thumbnail && (
-                  <Alert>
-                    <AlertDescription>No thumbnail set for this video.</AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => setShowThumbnailSelector(true)}
-                    className="w-full"
-                  >
-                    <ImageIcon className="w-4 h-4 mr-2" />
-                    {video.thumbnail ? 'Change Thumbnail' : 'Add Thumbnail'}
-                  </Button>
-
-                  {video.thumbnail && (
-                    <Button
-                      variant="destructive"
-                      onClick={handleRemoveThumbnail}
-                      disabled={isRemoving}
-                      className="w-full"
-                    >
-                      {isRemoving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Removing...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Remove Thumbnail
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
+          <TabsContent value="thumbnail" className="mt-4">
+            <VideoSettings videoId={videoId} video={video} />
           </TabsContent>
         </Tabs>
       </DialogContent>

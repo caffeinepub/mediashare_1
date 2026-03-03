@@ -8,22 +8,20 @@ export function useVideoLike() {
 
   return useMutation({
     mutationFn: async (videoId: string) => {
-      if (!actor) throw new Error('Actor not initialized');
-      await actor.likeVideo(videoId);
+      if (!actor) throw new Error('Actor not available');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (actor as any).likeVideo(videoId);
     },
-    onSuccess: (_, videoId) => {
-      // Invalidate both the videos list and individual video queries
-      queryClient.invalidateQueries({ queryKey: ['videos'] });
+    onSuccess: (_data, videoId) => {
       queryClient.invalidateQueries({ queryKey: ['video', videoId] });
-      toast.success('Video liked!');
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
     },
-    onError: (error: any) => {
-      if (error.message?.includes('Unauthorized')) {
-        toast.error('Please sign in to like videos');
-      } else if (error.message?.includes('already liked')) {
-        toast.info('You have already liked this video');
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Failed to like video.';
+      if (message.toLowerCase().includes('unauthorized')) {
+        toast.error('Please sign in to like videos.');
       } else {
-        toast.error('Failed to like video');
+        toast.error('Failed to like video.', { description: message });
       }
     },
   });

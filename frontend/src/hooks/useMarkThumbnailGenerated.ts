@@ -1,31 +1,26 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { ExternalBlob } from '../backend';
 import { toast } from 'sonner';
-import type { ExternalBlob } from '../backend';
 
 export function useMarkThumbnailGenerated() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      videoId,
-      thumbnailBlob,
-    }: {
-      videoId: string;
-      thumbnailBlob: ExternalBlob;
-    }) => {
+    mutationFn: async ({ videoId, thumbnailBlob }: { videoId: string; thumbnailBlob: ExternalBlob }) => {
       if (!actor) throw new Error('Actor not available');
-      await actor.markThumbnailGenerated(videoId, thumbnailBlob);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (actor as any).markThumbnailGenerated(videoId, thumbnailBlob);
     },
-    onSuccess: (_, variables) => {
-      toast.success('Thumbnail saved successfully!');
-      queryClient.invalidateQueries({ queryKey: ['video', variables.videoId] });
+    onSuccess: (_data, { videoId }) => {
+      queryClient.invalidateQueries({ queryKey: ['video', videoId] });
       queryClient.invalidateQueries({ queryKey: ['videos'] });
+      toast.success('Thumbnail saved!');
     },
-    onError: (error: any) => {
-      console.error('Failed to mark thumbnail as generated:', error);
-      toast.error(error.message || 'Failed to save thumbnail');
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Failed to save thumbnail.';
+      toast.error('Thumbnail save failed', { description: message });
     },
   });
 }

@@ -9,19 +9,20 @@ export function useDeleteVideo() {
   return useMutation({
     mutationFn: async (videoId: string) => {
       if (!actor) throw new Error('Actor not available');
-      await actor.deleteVideo(videoId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (actor as any).deleteVideo(videoId);
     },
-    onSuccess: () => {
+    onSuccess: (_data, videoId) => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
-      queryClient.invalidateQueries({ queryKey: ['video'] });
-      toast.success('Video deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['video', videoId] });
+      toast.success('Video deleted successfully.');
     },
-    onError: (error: any) => {
-      const message = error?.message || '';
-      if (message.includes('Unauthorized')) {
-        toast.error('You are not authorized to delete this video');
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Failed to delete video.';
+      if (message.toLowerCase().includes('unauthorized')) {
+        toast.error('Unauthorized: You can only delete your own videos.');
       } else {
-        toast.error('Failed to delete video');
+        toast.error('Failed to delete video.', { description: message });
       }
     },
   });

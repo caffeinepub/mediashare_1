@@ -1,282 +1,176 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon } from 'lucide-react';
-import { ExternalBlob } from '../backend';
+import { Camera, Upload, X, Loader2 } from 'lucide-react';
 import { useSetCustomThumbnail } from '../hooks/useSetCustomThumbnail';
 import { useMarkThumbnailGenerated } from '../hooks/useMarkThumbnailGenerated';
+import { useRemoveThumbnail } from '../hooks/useRemoveThumbnail';
+import { ExternalBlob } from '../backend';
+import type { ExtendedVideo } from '../lib/types';
 
 interface ThumbnailSelectorProps {
   videoId: string;
-  videoUrl: string;
-  onComplete: () => void;
+  video: ExtendedVideo;
 }
 
-const MAX_THUMBNAIL_SIZE_MB = 5;
-const ACCEPTED_IMAGE_FORMATS = ['image/jpeg', 'image/png'];
-
-export function ThumbnailSelector({ videoId, videoUrl, onComplete }: ThumbnailSelectorProps) {
-  const [autoThumbnails, setAutoThumbnails] = useState<string[]>([]);
-  const [selectedAutoIndex, setSelectedAutoIndex] = useState<number | null>(null);
-  const [customFile, setCustomFile] = useState<File | null>(null);
-  const [customPreview, setCustomPreview] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(true);
+export function ThumbnailSelector({ videoId, video }: ThumbnailSelectorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
-  const { mutate: setCustomThumbnail, isPending: isUploadingCustom, uploadProgress } = useSetCustomThumbnail();
-  const { mutate: markGenerated, isPending: isMarkingGenerated } = useMarkThumbnailGenerated();
+  const { setCustomThumbnail, isUploading: isUploadingCustom, uploadProgress } = useSetCustomThumbnail();
+  const markThumbnailGenerated = useMarkThumbnailGenerated();
+  const removeThumbnail = useRemoveThumbnail();
 
-  const isPending = isUploadingCustom || isMarkingGenerated;
+  const currentThumbnailUrl =
+    video.thumbnail &&
+    typeof video.thumbnail === 'object' &&
+    'getDirectURL' in (video.thumbnail as object)
+      ? (video.thumbnail as { getDirectURL(): string }).getDirectURL()
+      : null;
 
-  // Generate thumbnails from video
-  useEffect(() => {
-    const generateThumbnails = async () => {
-      if (!videoRef.current) return;
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+
+      try {
+        await setCustomThumbnail({ videoId, imageFile: file });
+      } finally {
+        setPreviewUrl(null);
+        URL.revokeObjectURL(url);
+      }
+    },
+    [videoId, setCustomThumbnail]
+  );
+
+  const handleCaptureThumbnail = useCallback(async () => {
+    const videoEl = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!videoEl || !canvas) return;
+
+    setIsCapturing(true);
+    try {
+      canvas.width = videoEl.videoWidth || 320;
+      canvas.height = videoEl.videoHeight || 180;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
 
-      const thumbnails: string[] = [];
-
-      // Wait for video metadata to load
-      await new Promise<void>((resolve) => {
-        if (video.readyState >= 2) {
-          resolve();
-        } else {
-          video.addEventListener('loadedmetadata', () => resolve(), { once: true });
-        }
-      });
-
-      const duration = video.duration;
-      const positions = [0.1, 0.3, 0.5, 0.7]; // 10%, 30%, 50%, 70% through the video
-
-      for (const position of positions) {
-        video.currentTime = duration * position;
-        
-        await new Promise<void>((resolve) => {
-          video.addEventListener('seeked', () => resolve(), { once: true });
-        });
-
-        // Set canvas size to match video dimensions
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        // Draw video frame to canvas
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Convert to data URL
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        thumbnails.push(dataUrl);
-      }
-
-      setAutoThumbnails(thumbnails);
-      setIsGenerating(false);
-    };
-
-    generateThumbnails().catch((err) => {
-      console.error('Failed to generate thumbnails:', err);
-      setIsGenerating(false);
-    });
-  }, [videoUrl]);
-
-  const validateCustomFile = (file: File): string | null => {
-    if (!ACCEPTED_IMAGE_FORMATS.includes(file.type)) {
-      return 'Invalid file format. Please upload a JPEG or PNG image.';
-    }
-
-    const fileSizeMB = file.size / 1024 / 1024;
-    if (fileSizeMB > MAX_THUMBNAIL_SIZE_MB) {
-      return `File size exceeds ${MAX_THUMBNAIL_SIZE_MB}MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`;
-    }
-
-    return null;
-  };
-
-  const handleCustomFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValidationError(null);
-    setSelectedAutoIndex(null);
-    
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const error = validateCustomFile(file);
-      
-      if (error) {
-        setValidationError(error);
-        setCustomFile(null);
-        setCustomPreview(null);
-        e.target.value = '';
-      } else {
-        setCustomFile(file);
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setCustomPreview(event.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  };
-
-  const handleSelectAutoThumbnail = async (index: number) => {
-    setSelectedAutoIndex(index);
-    setCustomFile(null);
-    setCustomPreview(null);
-    setValidationError(null);
-  };
-
-  const handleSubmit = async () => {
-    if (customFile) {
-      // Upload custom thumbnail
-      const arrayBuffer = await customFile.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const blob = ExternalBlob.fromBytes(uint8Array);
-
-      setCustomThumbnail(
-        { videoId, thumbnailBlob: blob },
-        {
-          onSuccess: () => {
-            onComplete();
-          },
-        }
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', 0.85)
       );
-    } else if (selectedAutoIndex !== null) {
-      // Convert selected auto-generated thumbnail to blob
-      const dataUrl = autoThumbnails[selectedAutoIndex];
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
+      if (!blob) return;
+
       const arrayBuffer = await blob.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
       const externalBlob = ExternalBlob.fromBytes(uint8Array);
 
-      markGenerated(
-        { videoId, thumbnailBlob: externalBlob },
-        {
-          onSuccess: () => {
-            onComplete();
-          },
-        }
-      );
+      await markThumbnailGenerated.mutateAsync({ videoId, thumbnailBlob: externalBlob });
+    } finally {
+      setIsCapturing(false);
     }
-  };
+  }, [videoId, markThumbnailGenerated]);
 
-  const canSubmit = (selectedAutoIndex !== null || customFile !== null) && !isPending && !validationError;
+  const videoUrl = video.file.getDirectURL();
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
-            <ImageIcon className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <CardTitle>Select Thumbnail</CardTitle>
-            <CardDescription>Choose a thumbnail for your video</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Hidden video element for thumbnail generation */}
-        <video ref={videoRef} src={videoUrl} className="hidden" preload="metadata" />
+    <div className="space-y-4">
+      <div className="text-sm font-medium text-foreground">Thumbnail</div>
 
-        {/* Auto-generated thumbnails */}
-        <div className="space-y-3">
-          <Label>Auto-Generated Thumbnails</Label>
-          {isGenerating ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
-                <p className="text-sm text-muted-foreground">Generating thumbnails...</p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {autoThumbnails.map((thumbnail, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleSelectAutoThumbnail(index)}
-                  disabled={isPending}
-                  className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
-                    selectedAutoIndex === index
-                      ? 'border-primary ring-2 ring-primary/20'
-                      : 'border-border hover:border-primary/50'
-                  } ${isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  <img src={thumbnail} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
-                  {selectedAutoIndex === index && (
-                    <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Custom thumbnail upload */}
-        <div className="space-y-3">
-          <Label htmlFor="custom-thumbnail">Or Upload Custom Thumbnail</Label>
-          <Input
-            id="custom-thumbnail"
-            type="file"
-            accept={ACCEPTED_IMAGE_FORMATS.join(',')}
-            onChange={handleCustomFileChange}
-            disabled={isPending}
+      {/* Current / Preview Thumbnail */}
+      {(currentThumbnailUrl || previewUrl) && (
+        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
+          <img
+            src={previewUrl ?? currentThumbnailUrl ?? ''}
+            alt="Thumbnail"
+            className="w-full h-full object-cover"
           />
-          {customPreview && (
-            <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-primary ring-2 ring-primary/20 max-w-sm">
-              <img src={customPreview} alt="Custom thumbnail preview" className="w-full h-full object-cover" />
-              <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-            </div>
+          {!previewUrl && currentThumbnailUrl && (
+            <Button
+              size="icon"
+              variant="destructive"
+              className="absolute top-2 right-2 w-7 h-7"
+              onClick={() => removeThumbnail.mutate(videoId)}
+              disabled={removeThumbnail.isPending}
+            >
+              {removeThumbnail.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <X className="w-3.5 h-3.5" />
+              )}
+            </Button>
           )}
-          {validationError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{validationError}</AlertDescription>
-            </Alert>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Accepted formats: JPEG, PNG • Max size: {MAX_THUMBNAIL_SIZE_MB}MB
-          </p>
         </div>
+      )}
 
-        {/* Upload progress */}
-        {isUploadingCustom && uploadProgress > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Uploading thumbnail...</span>
-              <span className="font-medium">{uploadProgress}%</span>
-            </div>
-            <Progress value={uploadProgress} className="h-2" />
-          </div>
-        )}
+      {/* Upload Progress */}
+      {isUploadingCustom && (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Uploading thumbnail...</p>
+          <Progress value={uploadProgress} className="h-1.5" />
+        </div>
+      )}
 
-        {/* Submit button */}
-        <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full">
-          {isPending ? (
+      {/* Video for frame capture */}
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          Seek to a frame in the video below, then capture it as thumbnail:
+        </p>
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          controls
+          className="w-full aspect-video rounded-lg bg-black"
+          preload="metadata"
+        />
+        <canvas ref={canvasRef} className="hidden" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCaptureThumbnail}
+          disabled={isCapturing || markThumbnailGenerated.isPending}
+          className="w-full"
+        >
+          {isCapturing || markThumbnailGenerated.isPending ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
+              Capturing...
             </>
           ) : (
             <>
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Continue
+              <Camera className="w-4 h-4 mr-2" />
+              Capture Current Frame
             </>
           )}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Upload Custom Image */}
+      <div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploadingCustom}
+          className="w-full"
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Upload Custom Thumbnail
+        </Button>
+      </div>
+    </div>
   );
 }

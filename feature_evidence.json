@@ -2,15 +2,34 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-broken-stripe-premium-subscription-flow-end-to-end-the-createcheckoutsession-backend-call-must-correctly-generate-a-stripe-checkout-url-the-usecreatecheckoutsession-hook-must-properly-redirect-the-user-to-the-stripe-hosted-payment-page-after-payment-paymentsuccess-tsx-must-verify-the-session-and-call-setsubscriptionstatus-to-upgrade-the-user-to-premium-after-payment-failure-cancellation-paymentfailure-tsx-must-allow-the-user-to-retry-the-usegetusersubscriptionstatus-hook-must-reflect-the-correct-tier-free-or-premium-from-the-backend-at-all-times",
-      "featureTitle": "Fix the broken Stripe premium subscription flow end-to-end. The `createCheckoutSession` backend call must correctly generate a Stripe checkout URL. The `useCreateCheckoutSession` hook must properly redirect the user to the Stripe-hosted payment page. After payment, `PaymentSuccess.tsx` must verify the session and call `setSubscriptionStatus` to upgrade the user to premium. After payment failure/cancellation, `PaymentFailure.tsx` must allow the user to retry. The `useGetUserSubscriptionStatus` hook must reflect the correct tier ('free' or 'premium') from the backend at all times.",
+      "featureId": "feature-add-a-razorpay-setup-modal-component-similar-to-the-existing-stripesetupmodal-that-allows-the-admin-owner-to-enter-their-razorpay-key-id-and-key-secret-wire-it-into-the-settings-page-with-a-dedicated-razorpay-setup-button-visible-only-to-authenticated-users-add-corresponding-userazorpayconfig-and-usesetrazorpayconfiguration-hooks-mirroring-the-existing-usestripeconfig-pattern",
+      "featureTitle": "Add a Razorpay setup modal component (similar to the existing StripeSetupModal) that allows the admin/owner to enter their Razorpay Key ID and Key Secret. Wire it into the Settings page with a dedicated 'Razorpay Setup' button visible only to authenticated users. Add corresponding useRazorpayConfig and useSetRazorpayConfiguration hooks mirroring the existing useStripeConfig pattern.",
       "files": [
-        "frontend/src/components/UpgradePrompt.tsx",
-        "frontend/src/hooks/useCreateCheckoutSession.ts",
-        "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
-        "frontend/src/pages/PaymentFailure.tsx",
-        "frontend/src/pages/PaymentSuccess.tsx",
-        "frontend/src/pages/Settings.tsx",
+        "frontend/src/components/RazorpaySetupModal.tsx",
+        "frontend/src/hooks/useRazorpayConfig.ts",
+        "frontend/src/pages/Settings.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-upgrade-page-frontend-src-pages-upgrade-tsx-to-display-a-razorpay-payment-option-for-inr-alongside-the-existing-stripe-option-when-the-user-selects-razorpay-checkout-call-the-backend-to-create-a-razorpay-order-load-the-razorpay-js-sdk-https-checkout-razorpay-com-v1-checkout-js-dynamically-open-the-razorpay-checkout-modal-and-on-successful-payment-call-the-backend-verifyrazorpaypayment-method-on-verified-success-redirect-to-the-existing-paymentsuccess-page-on-failure-redirect-to-paymentfailure-page",
+      "featureTitle": "Update the Upgrade page (frontend/src/pages/Upgrade.tsx) to display a Razorpay payment option for INR (₹) alongside the existing Stripe option. When the user selects Razorpay checkout, call the backend to create a Razorpay order, load the Razorpay JS SDK (https://checkout.razorpay.com/v1/checkout.js) dynamically, open the Razorpay checkout modal, and on successful payment call the backend verifyRazorpayPayment method. On verified success, redirect to the existing PaymentSuccess page. On failure, redirect to PaymentFailure page.",
+      "files": [
+        "frontend/src/hooks/useRazorpayCheckout.ts",
         "frontend/src/pages/Upgrade.tsx"
       ],
       "components": [
@@ -25,19 +44,19 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-3"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-an-ad-revenue-dashboard-ui-create-a-new-ad-revenue-section-visible-in-the-user-s-profile-page-and-or-settings-page-for-authenticated-users-it-must-display-total-ad-earnings-fetched-via-getadrevenueforcaller-a-per-video-breakdown-showing-each-video-s-title-total-impressions-and-estimated-revenue-simulate-an-ad-impression-by-calling-recordadimpression-when-a-video-has-been-watched-for-at-least-10-seconds-on-the-videoplayer-page",
-      "featureTitle": "Add an ad revenue dashboard UI. Create a new 'Ad Revenue' section visible in the user's Profile page and/or Settings page for authenticated users. It must display: total ad earnings (fetched via `getAdRevenueForCaller()`), a per-video breakdown showing each video's title, total impressions, and estimated revenue. Simulate an ad impression by calling `recordAdImpression` when a video has been watched for at least 10 seconds on the VideoPlayer page.",
+      "featureId": "feature-add-an-adsense-configuration-section-to-the-settings-page-where-the-authenticated-user-can-enter-and-save-their-google-adsense-publisher-id-ca-pub-xxxxxxxx-add-a-useadsenseconfig-hook-to-read-and-update-the-publisher-id-dynamically-inject-the-google-adsense-script-tag-script-async-src-https-pagead2-googlesyndication-com-pagead-js-adsbygoogle-js-client-ca-pub-xxxx-into-the-page-head-when-a-publisher-id-is-configured-add-adsense-ad-unit-placeholders-ins-adsbygoogle-in-appropriate-locations-below-the-video-player-in-videoplayer-tsx-and-in-the-sidebar-area-in-layout-tsx",
+      "featureTitle": "Add an AdSense configuration section to the Settings page where the authenticated user can enter and save their Google AdSense Publisher ID (ca-pub-XXXXXXXX). Add a useAdSenseConfig hook to read and update the publisher ID. Dynamically inject the Google AdSense script tag (<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX'>) into the page head when a publisher ID is configured. Add AdSense ad unit placeholders (ins.adsbygoogle) in appropriate locations: below the video player in VideoPlayer.tsx and in the sidebar area in Layout.tsx.",
       "files": [
-        "frontend/src/components/AdRevenueDashboard.tsx",
-        "frontend/src/hooks/useGetAdRevenueForCaller.ts",
-        "frontend/src/hooks/useGetAdRevenueForVideo.ts",
-        "frontend/src/hooks/useRecordAdImpression.ts",
-        "frontend/src/pages/Profile.tsx",
+        "frontend/src/components/AdSenseScript.tsx",
+        "frontend/src/components/AdSenseUnit.tsx",
+        "frontend/src/components/Layout.tsx",
+        "frontend/src/hooks/useAdSenseConfig.ts",
+        "frontend/src/pages/Settings.tsx",
         "frontend/src/pages/VideoPlayer.tsx"
       ],
       "components": [
@@ -52,7 +71,7 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-5"
       ],
       "confidence": "high"
     }

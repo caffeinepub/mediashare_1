@@ -4,6 +4,8 @@ import { ProfileSetupModal } from './ProfileSetupModal';
 import { AuthButton } from './AuthButton';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
+import { AdSenseScript } from './AdSenseScript';
+import { AdSenseUnit } from './AdSenseUnit';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { Search, Upload, Menu, Share2 } from 'lucide-react';
 import { SiX, SiFacebook, SiInstagram } from 'react-icons/si';
@@ -20,7 +22,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-background dark">
       <ProfileSetupModal />
-      
+      <AdSenseScript />
+
       {/* Header: overflow visible so dropdowns can escape */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
         <div className="flex h-16 items-center px-4 gap-2 sm:gap-4">
@@ -84,8 +87,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-1">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        {/* Add pb-16 sm:pb-20 to prevent content from being hidden behind bottom nav */}
-        <main className="flex-1 overflow-x-hidden pb-16 sm:pb-20">{children}</main>
+        <div className="flex flex-1 overflow-x-hidden">
+          {/* Main content */}
+          <main className="flex-1 pb-16 sm:pb-20">{children}</main>
+
+          {/* Desktop sidebar ad unit */}
+          <aside className="hidden xl:block w-64 flex-shrink-0 px-3 py-6 border-l border-border">
+            <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide font-medium">
+              Sponsored
+            </p>
+            <AdSenseUnit adSlot="sidebar-ad-slot" adFormat="vertical" className="min-h-[250px]" />
+          </aside>
+        </div>
       </div>
 
       <footer className="border-t border-border bg-card mb-16 sm:mb-20">

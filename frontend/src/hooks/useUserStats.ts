@@ -1,18 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { UserStats } from '../backend';
-import type { Principal } from '@icp-sdk/core/principal';
+import type { Principal } from '@dfinity/principal';
+import type { UserStats } from '../lib/types';
 
-export function useUserStats(principal: Principal) {
+export function useUserStats(principal: Principal | string | undefined) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<UserStats>({
-    queryKey: ['userStats', principal.toString()],
+  const principalStr = principal?.toString();
+
+  return useQuery<UserStats | null>({
+    queryKey: ['userStats', principalStr],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getUserStats(principal);
+      if (!actor || !principal) return null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getUserStats(principal);
     },
-    enabled: !!actor && !isFetching,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!actor && !isFetching && !!principal,
+    staleTime: 5 * 60 * 1000,
   });
 }

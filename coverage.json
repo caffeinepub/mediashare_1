@@ -1,64 +1,77 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-03T09:28:37.800Z",
+  "generatedAt": "2026-03-03T09:59:28.825Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 5,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the broken Stripe premium subscription flow end-to-end. The `createCheckoutSession` backend call must correctly generate a Stripe checkout URL. The `useCreateCheckoutSession` hook must properly redirect the user to the Stripe-hosted payment page. After payment, `PaymentSuccess.tsx` must verify the session and call `setSubscriptionStatus` to upgrade the user to premium. After payment failure/cancellation, `PaymentFailure.tsx` must allow the user to retry. The `useGetUserSubscriptionStatus` hook must reflect the correct tier ('free' or 'premium') from the backend at all times.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useCreateCheckoutSession.ts",
-          "frontend/src/pages/Upgrade.tsx",
-          "frontend/src/pages/PaymentSuccess.tsx",
-          "frontend/src/pages/PaymentFailure.tsx",
-          "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
-          "frontend/src/pages/Settings.tsx",
-          "frontend/src/components/UpgradePrompt.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useCreateCheckoutSession.ts",
-          "frontend/src/pages/Upgrade.tsx",
-          "frontend/src/pages/PaymentSuccess.tsx",
-          "frontend/src/pages/PaymentFailure.tsx",
-          "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
-          "frontend/src/pages/Settings.tsx",
-          "frontend/src/components/UpgradePrompt.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Add an ad revenue system to the backend. Implement a data model to track ad impressions and revenue per video and per creator. Add backend endpoints: `recordAdImpression(videoId)` to log an ad view and accrue simulated revenue to the video uploader, `getAdRevenueForCaller()` to return the total ad revenue earned by the authenticated caller, and `getAdRevenueForVideo(videoId)` to return revenue for a specific video. Revenue should be calculated at a fixed simulated CPM rate (e.g., $2.00 per 1000 impressions).",
+        "summary": "Add Razorpay payment gateway integration to the backend to support INR-based premium subscriptions for Indian users. Store Razorpay key ID and secret in canister state (similar to existing Stripe config). Expose backend methods: setRazorpayConfiguration(keyId, keySecret), isRazorpayConfigured(), createRazorpayOrder(amount in paise, currency 'INR'), and verifyRazorpayPayment(orderId, paymentId, signature) that validates the HMAC-SHA256 signature and upgrades the caller's subscription to premium on success.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-3",
-        "summary": "Add an ad revenue dashboard UI. Create a new 'Ad Revenue' section visible in the user's Profile page and/or Settings page for authenticated users. It must display: total ad earnings (fetched via `getAdRevenueForCaller()`), a per-video breakdown showing each video's title, total impressions, and estimated revenue. Simulate an ad impression by calling `recordAdImpression` when a video has been watched for at least 10 seconds on the VideoPlayer page.",
+        "id": "REQ-2",
+        "summary": "Add a Razorpay setup modal component (similar to the existing StripeSetupModal) that allows the admin/owner to enter their Razorpay Key ID and Key Secret. Wire it into the Settings page with a dedicated 'Razorpay Setup' button visible only to authenticated users. Add corresponding useRazorpayConfig and useSetRazorpayConfiguration hooks mirroring the existing useStripeConfig pattern.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useGetAdRevenueForCaller.ts",
-          "frontend/src/hooks/useGetAdRevenueForVideo.ts",
-          "frontend/src/hooks/useRecordAdImpression.ts",
-          "frontend/src/components/AdRevenueDashboard.tsx",
-          "frontend/src/pages/Profile.tsx",
-          "frontend/src/pages/VideoPlayer.tsx"
+          "frontend/src/components/RazorpaySetupModal.tsx",
+          "frontend/src/hooks/useRazorpayConfig.ts",
+          "frontend/src/pages/Settings.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useGetAdRevenueForCaller.ts",
-          "frontend/src/hooks/useGetAdRevenueForVideo.ts",
-          "frontend/src/hooks/useRecordAdImpression.ts",
-          "frontend/src/components/AdRevenueDashboard.tsx",
-          "frontend/src/pages/Profile.tsx",
-          "frontend/src/pages/VideoPlayer.tsx"
+          "frontend/src/components/RazorpaySetupModal.tsx",
+          "frontend/src/hooks/useRazorpayConfig.ts",
+          "frontend/src/pages/Settings.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Update the Upgrade page (frontend/src/pages/Upgrade.tsx) to display a Razorpay payment option for INR (₹) alongside the existing Stripe option. When the user selects Razorpay checkout, call the backend to create a Razorpay order, load the Razorpay JS SDK (https://checkout.razorpay.com/v1/checkout.js) dynamically, open the Razorpay checkout modal, and on successful payment call the backend verifyRazorpayPayment method. On verified success, redirect to the existing PaymentSuccess page. On failure, redirect to PaymentFailure page.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useRazorpayCheckout.ts",
+          "frontend/src/pages/Upgrade.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useRazorpayCheckout.ts",
+          "frontend/src/pages/Upgrade.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Add Google AdSense integration support to the app. Add a backend method setAdSensePublisherId(publisherId: Text) to store the AdSense publisher ID (ca-pub-XXXXXXXX) in canister state, and getAdSensePublisherId() to retrieve it. The publisher ID should be included in a metadata endpoint or accessible from the frontend configuration.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Add an AdSense configuration section to the Settings page where the authenticated user can enter and save their Google AdSense Publisher ID (ca-pub-XXXXXXXX). Add a useAdSenseConfig hook to read and update the publisher ID. Dynamically inject the Google AdSense script tag (<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX'>) into the page head when a publisher ID is configured. Add AdSense ad unit placeholders (ins.adsbygoogle) in appropriate locations: below the video player in VideoPlayer.tsx and in the sidebar area in Layout.tsx.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useAdSenseConfig.ts",
+          "frontend/src/components/AdSenseScript.tsx",
+          "frontend/src/components/AdSenseUnit.tsx",
+          "frontend/src/pages/Settings.tsx",
+          "frontend/src/pages/VideoPlayer.tsx",
+          "frontend/src/components/Layout.tsx",
+          "frontend/src/main.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useAdSenseConfig.ts",
+          "frontend/src/components/AdSenseScript.tsx",
+          "frontend/src/components/AdSenseUnit.tsx",
+          "frontend/src/pages/Settings.tsx",
+          "frontend/src/pages/VideoPlayer.tsx",
+          "frontend/src/components/Layout.tsx"
         ]
       }
     ]
@@ -74,20 +87,53 @@
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
     "frontend/src/components/AdRevenueDashboard.tsx",
-    "frontend/src/components/UpgradePrompt.tsx",
+    "frontend/src/components/AdSenseScript.tsx",
+    "frontend/src/components/AdSenseUnit.tsx",
+    "frontend/src/components/Layout.tsx",
+    "frontend/src/components/PhotoCard.tsx",
+    "frontend/src/components/RazorpaySetupModal.tsx",
+    "frontend/src/components/ThumbnailSelector.tsx",
+    "frontend/src/components/VideoCard.tsx",
+    "frontend/src/components/VideoEditModal.tsx",
+    "frontend/src/components/VideoRating.tsx",
+    "frontend/src/components/VideoSettings.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useCreateCheckoutSession.ts",
+    "frontend/src/hooks/useAdSenseConfig.ts",
+    "frontend/src/hooks/useAddComment.ts",
+    "frontend/src/hooks/useAverageRating.ts",
+    "frontend/src/hooks/useChannelName.ts",
+    "frontend/src/hooks/useComments.ts",
+    "frontend/src/hooks/useDeleteVideo.ts",
     "frontend/src/hooks/useGetAdRevenueForCaller.ts",
     "frontend/src/hooks/useGetAdRevenueForVideo.ts",
+    "frontend/src/hooks/useGetUserRating.ts",
     "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
+    "frontend/src/hooks/useIncrementVideoView.ts",
+    "frontend/src/hooks/useMarkThumbnailGenerated.ts",
+    "frontend/src/hooks/usePhoto.ts",
+    "frontend/src/hooks/usePhotoUpload.ts",
+    "frontend/src/hooks/usePhotos.ts",
+    "frontend/src/hooks/useRateVideo.ts",
+    "frontend/src/hooks/useRazorpayCheckout.ts",
+    "frontend/src/hooks/useRazorpayConfig.ts",
     "frontend/src/hooks/useRecordAdImpression.ts",
-    "frontend/src/pages/PaymentFailure.tsx",
-    "frontend/src/pages/PaymentSuccess.tsx",
-    "frontend/src/pages/Profile.tsx",
+    "frontend/src/hooks/useRemoveThumbnail.ts",
+    "frontend/src/hooks/useSearchVideos.ts",
+    "frontend/src/hooks/useSetChannelName.ts",
+    "frontend/src/hooks/useSetCustomThumbnail.ts",
+    "frontend/src/hooks/useSetSubscriptionStatus.ts",
+    "frontend/src/hooks/useTotalRatings.ts",
+    "frontend/src/hooks/useUpdateVideo.ts",
+    "frontend/src/hooks/useUserStats.ts",
+    "frontend/src/hooks/useVideo.ts",
+    "frontend/src/hooks/useVideoLike.ts",
+    "frontend/src/hooks/useVideoUpload.ts",
+    "frontend/src/hooks/useVideos.ts",
+    "frontend/src/lib/types.ts",
+    "frontend/src/pages/ChannelProfile.tsx",
     "frontend/src/pages/Settings.tsx",
     "frontend/src/pages/Upgrade.tsx",
-    "frontend/src/pages/UploadPhoto.tsx",
     "frontend/src/pages/UploadVideo.tsx",
     "frontend/src/pages/VideoPlayer.tsx",
     "project_state.json",

@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { VideoMetadata } from '../backend';
+import type { VideoMetadata } from '../lib/types';
 
 export function useVideos() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching } = useActor();
 
   return useQuery<VideoMetadata[]>({
     queryKey: ['videos'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.listVideos();
+      if (!actor) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).listVideos();
     },
-    enabled: !!actor && !actorFetching,
-    retry: false,
+    enabled: !!actor && !isFetching,
   });
 }

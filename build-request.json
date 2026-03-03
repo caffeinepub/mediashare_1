@@ -1,84 +1,121 @@
 {
   "kind": "build_request",
-  "title": "Fix Subscription Method & Add Ad Revenue Monetization",
+  "title": "Integrate Razorpay (INR payments) and Google AdSense (real ad revenue)",
   "projectName": "Media Share",
-  "priority": "high",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the broken Stripe premium subscription flow end-to-end. The `createCheckoutSession` backend call must correctly generate a Stripe checkout URL. The `useCreateCheckoutSession` hook must properly redirect the user to the Stripe-hosted payment page. After payment, `PaymentSuccess.tsx` must verify the session and call `setSubscriptionStatus` to upgrade the user to premium. After payment failure/cancellation, `PaymentFailure.tsx` must allow the user to retry. The `useGetUserSubscriptionStatus` hook must reflect the correct tier ('free' or 'premium') from the backend at all times.",
-      "target": "both",
+      "text": "Add Razorpay payment gateway integration to the backend to support INR-based premium subscriptions for Indian users. Store Razorpay key ID and secret in canister state (similar to existing Stripe config). Expose backend methods: setRazorpayConfiguration(keyId, keySecret), isRazorpayConfigured(), createRazorpayOrder(amount in paise, currency 'INR'), and verifyRazorpayPayment(orderId, paymentId, signature) that validates the HMAC-SHA256 signature and upgrades the caller's subscription to premium on success.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-last"
         ],
         "quotes": [
-          "Subscription method not working"
+          "C"
         ]
       },
       "acceptanceCriteria": [
-        "Clicking the subscribe/upgrade button on the Upgrade page initiates a Stripe checkout session and redirects to the Stripe payment page",
-        "After successful payment, the user is redirected to /payment-success, their subscription status is updated to premium, and a success message is shown",
-        "After cancelled/failed payment, the user is redirected to /payment-failure with a retry option",
-        "The Settings page correctly displays 'Premium' tier after a successful subscription",
-        "The UpgradePrompt component is hidden for users with an active premium subscription",
-        "The backend correctly stores and returns subscription status per user principal"
+        "Razorpay key ID and secret can be stored and retrieved from canister state",
+        "isRazorpayConfigured() returns true only when both key ID and secret are set",
+        "createRazorpayOrder() returns an order ID that can be used on the frontend",
+        "verifyRazorpayPayment() validates the payment signature and upgrades subscription to premium on success",
+        "Existing Stripe integration remains unaffected"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add an ad revenue system to the backend. Implement a data model to track ad impressions and revenue per video and per creator. Add backend endpoints: `recordAdImpression(videoId)` to log an ad view and accrue simulated revenue to the video uploader, `getAdRevenueForCaller()` to return the total ad revenue earned by the authenticated caller, and `getAdRevenueForVideo(videoId)` to return revenue for a specific video. Revenue should be calculated at a fixed simulated CPM rate (e.g., $2.00 per 1000 impressions).",
-      "target": "backend",
+      "text": "Add a Razorpay setup modal component (similar to the existing StripeSetupModal) that allows the admin/owner to enter their Razorpay Key ID and Key Secret. Wire it into the Settings page with a dedicated 'Razorpay Setup' button visible only to authenticated users. Add corresponding useRazorpayConfig and useSetRazorpayConfiguration hooks mirroring the existing useStripeConfig pattern.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-last"
         ],
         "quotes": [
-          "add ad revenue method"
+          "C"
         ]
       },
       "acceptanceCriteria": [
-        "Backend exposes `recordAdImpression(videoId: Text) : async ()` that increments impression count and accrues revenue for the video owner",
-        "Backend exposes `getAdRevenueForCaller() : async Float` returning total earnings for the authenticated user",
-        "Backend exposes `getAdRevenueForVideo(videoId: Text) : async Float` returning earnings for a specific video",
-        "Revenue is computed at a fixed CPM rate applied to impression count",
-        "Ad impression data is persisted in stable storage"
+        "A 'Razorpay Setup' button appears in the Settings page for authenticated users",
+        "Clicking it opens a modal with fields for Key ID and Key Secret",
+        "Submitting the form calls the backend setRazorpayConfiguration method",
+        "A success toast is shown on save",
+        "useRazorpayConfig hook correctly reflects whether Razorpay is configured"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add an ad revenue dashboard UI. Create a new 'Ad Revenue' section visible in the user's Profile page and/or Settings page for authenticated users. It must display: total ad earnings (fetched via `getAdRevenueForCaller()`), a per-video breakdown showing each video's title, total impressions, and estimated revenue. Simulate an ad impression by calling `recordAdImpression` when a video has been watched for at least 10 seconds on the VideoPlayer page.",
+      "text": "Update the Upgrade page (frontend/src/pages/Upgrade.tsx) to display a Razorpay payment option for INR (₹) alongside the existing Stripe option. When the user selects Razorpay checkout, call the backend to create a Razorpay order, load the Razorpay JS SDK (https://checkout.razorpay.com/v1/checkout.js) dynamically, open the Razorpay checkout modal, and on successful payment call the backend verifyRazorpayPayment method. On verified success, redirect to the existing PaymentSuccess page. On failure, redirect to PaymentFailure page.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-last"
         ],
         "quotes": [
-          "add ad revenue method"
+          "C"
         ]
       },
       "acceptanceCriteria": [
-        "Authenticated users see a 'Ad Revenue' card/section in their Profile or Settings page",
-        "Total earnings are displayed in USD with two decimal places",
-        "A per-video table/list shows video title, impression count, and estimated earnings",
-        "An ad impression is automatically recorded after 10 seconds of video playback on the VideoPlayer page",
-        "Revenue data refreshes when the user navigates to the earnings section",
-        "Non-authenticated users do not see the ad revenue section"
+        "Upgrade page shows a Razorpay payment button labeled with INR pricing (e.g., ₹499/month)",
+        "Razorpay checkout modal opens with correct order details",
+        "On payment success the signature is verified via backend before redirecting to PaymentSuccess",
+        "On payment failure or dismissal the user is redirected to PaymentFailure page",
+        "Razorpay option is only shown when isRazorpayConfigured() returns true"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add Google AdSense integration support to the app. Add a backend method setAdSensePublisherId(publisherId: Text) to store the AdSense publisher ID (ca-pub-XXXXXXXX) in canister state, and getAdSensePublisherId() to retrieve it. The publisher ID should be included in a metadata endpoint or accessible from the frontend configuration.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "C"
+        ]
+      },
+      "acceptanceCriteria": [
+        "setAdSensePublisherId() stores the publisher ID in stable canister state",
+        "getAdSensePublisherId() returns the stored publisher ID",
+        "Publisher ID persists across canister upgrades"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Add an AdSense configuration section to the Settings page where the authenticated user can enter and save their Google AdSense Publisher ID (ca-pub-XXXXXXXX). Add a useAdSenseConfig hook to read and update the publisher ID. Dynamically inject the Google AdSense script tag (<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX'>) into the page head when a publisher ID is configured. Add AdSense ad unit placeholders (ins.adsbygoogle) in appropriate locations: below the video player in VideoPlayer.tsx and in the sidebar area in Layout.tsx.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "C"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Settings page has an 'AdSense Configuration' section with a Publisher ID input field",
+        "Saving the publisher ID calls the backend setAdSensePublisherId method",
+        "When a publisher ID is configured, the AdSense script is injected into the document head",
+        "Ad unit placeholders (ins.adsbygoogle) are rendered below the video player",
+        "Ad unit placeholders are rendered in a sidebar slot in the main layout",
+        "adsbygoogle.push({}) is called after each ad unit renders"
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "All backend logic must remain in a single Motoko actor in backend/main.mo",
-    "Ad revenue is simulated — no real ad network integration required",
-    "Stripe configuration (secret key, allowed countries) must remain configurable via the existing StripeSetupModal"
+    "Do not remove or break existing Stripe subscription integration",
+    "Do not modify files in frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
+    "Razorpay JS SDK must be loaded dynamically at checkout time, not bundled",
+    "AdSense publisher ID must be stored in stable canister state so it survives upgrades"
   ],
   "nonGoals": [
-    "Real ad network integration (Google AdSense, etc.)",
-    "Payout processing or real money transfers for ad revenue",
-    "Creator subscription tiers beyond free/premium",
-    "Playlist features",
-    "Shorts features beyond the existing placeholder"
+    "Removing or replacing Stripe — both Stripe and Razorpay should coexist",
+    "Automatic ad placement optimization or A/B testing",
+    "Real-time revenue analytics from AdSense (only integration/script injection is in scope)",
+    "SMS or email notifications for payment events",
+    "Razorpay subscriptions/recurring billing (one-time premium upgrade only)"
   ],
   "imageRequirements": {
     "required": [],

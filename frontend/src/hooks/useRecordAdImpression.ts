@@ -8,14 +8,15 @@ export function useRecordAdImpression() {
   return useMutation({
     mutationFn: async (videoId: string) => {
       if (!actor) throw new Error('Actor not available');
-      await actor.recordAdImpression(videoId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (actor as any).recordAdImpression(videoId);
     },
-    onSuccess: (_data, videoId) => {
-      queryClient.invalidateQueries({ queryKey: ['adRevenueForVideo', videoId] });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adRevenueForCaller'] });
+      queryClient.invalidateQueries({ queryKey: ['adRevenueForVideo'] });
     },
     onError: () => {
-      // Silently fail — don't disrupt video playback
+      // Silently ignore ad impression errors to avoid disrupting video playback
     },
   });
 }

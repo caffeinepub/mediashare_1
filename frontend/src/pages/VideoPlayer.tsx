@@ -18,6 +18,7 @@ import { VideoRatingDisplay } from '../components/VideoRatingDisplay';
 import { ShareButton } from '../components/ShareButton';
 import { VideoEditModal } from '../components/VideoEditModal';
 import { DeleteVideoButton } from '../components/DeleteVideoButton';
+import { AdSenseUnit } from '../components/AdSenseUnit';
 import { formatViewCount, formatTimeAgo } from '../utils/formatters';
 
 const AD_IMPRESSION_THRESHOLD_SECONDS = 10;
@@ -146,6 +147,13 @@ export default function VideoPlayer() {
               }}
             />
           </div>
+
+          {/* Ad Unit below video player */}
+          <AdSenseUnit
+            adSlot="video-player-below-ad"
+            adFormat="horizontal"
+            className="w-full min-h-[90px] rounded-lg overflow-hidden"
+          />
 
           {/* Video Info */}
           <div className="space-y-3">

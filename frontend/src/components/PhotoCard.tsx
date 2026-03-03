@@ -1,38 +1,35 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { useNavigate } from '@tanstack/react-router';
+import React from 'react';
+import { Link } from '@tanstack/react-router';
 import { ChannelNameDisplay } from './ChannelNameDisplay';
-import type { PhotoMetadata } from '../backend';
+import { formatTimeAgo } from '../utils/formatters';
+import type { PhotoMetadata } from '../lib/types';
 
 interface PhotoCardProps {
   photo: PhotoMetadata;
 }
 
 export function PhotoCard({ photo }: PhotoCardProps) {
-  const navigate = useNavigate();
-
   return (
-    <Card
-      className="cursor-pointer hover:shadow-lg transition-shadow"
-      onClick={() => navigate({ to: '/photo/$id', params: { id: photo.id } })}
-    >
-      <CardContent className="p-0">
+    <Link to="/photo/$id" params={{ id: photo.id }} className="block group">
+      <div className="rounded-xl overflow-hidden bg-card border border-border hover:border-primary/30 transition-all duration-200 hover:shadow-md">
+        {/* Thumbnail */}
         <div className="aspect-square bg-muted relative overflow-hidden">
           <img
             src="/assets/generated/photo-placeholder.dim_320x320.png"
             alt={photo.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>
-        <div className="p-4">
-          <h3 className="font-semibold text-lg mb-2 line-clamp-2">{photo.title}</h3>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <ChannelNameDisplay principal={photo.uploader} />
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {new Date(Number(photo.uploadTime) / 1000000).toLocaleDateString()}
-          </div>
+
+        {/* Info */}
+        <div className="p-3 space-y-1">
+          <h3 className="font-medium text-sm text-foreground line-clamp-2 leading-snug">
+            {photo.title}
+          </h3>
+          <ChannelNameDisplay principal={photo.uploader} className="text-xs text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">{formatTimeAgo(photo.uploadTime)}</p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </Link>
   );
 }

@@ -1,21 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
 
-export type VideoAdRevenue = {
+interface AdRevenueData {
   impressions: bigint;
   totalRevenue: number;
-};
+}
 
-export function useGetAdRevenueForVideo(videoId: string, enabled = true) {
-  const { actor, isFetching: actorFetching } = useActor();
+export function useGetAdRevenueForVideo(videoId: string) {
+  const { actor, isFetching } = useActor();
 
-  return useQuery<VideoAdRevenue>({
+  return useQuery<AdRevenueData>({
     queryKey: ['adRevenueForVideo', videoId],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getAdRevenueForVideo(videoId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAdRevenueForVideo(videoId);
     },
-    enabled: !!actor && !actorFetching && enabled && !!videoId,
-    staleTime: 30_000,
+    enabled: !!actor && !isFetching && !!videoId,
   });
 }

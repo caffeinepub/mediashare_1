@@ -8,7 +8,7 @@ import VideoPlayer from './pages/VideoPlayer';
 import PhotoViewer from './pages/PhotoViewer';
 import { Home } from './pages/Home';
 import Settings from './pages/Settings';
-import { ChannelProfile } from './pages/ChannelProfile';
+import ChannelProfile from './pages/ChannelProfile';
 import Upgrade from './pages/Upgrade';
 import { Shorts } from './pages/Shorts';
 import { Subscriptions } from './pages/Subscriptions';
