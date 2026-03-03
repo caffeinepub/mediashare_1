@@ -13,18 +13,19 @@ export function useCreateCheckoutSession() {
   return useMutation({
     mutationFn: async (items: ShoppingItem[]): Promise<CheckoutSession> => {
       if (!actor) throw new Error('Actor not available');
-
       const baseUrl = `${window.location.protocol}//${window.location.host}`;
       const successUrl = `${baseUrl}/payment-success`;
       const cancelUrl = `${baseUrl}/payment-failure`;
-
       const result = await actor.createCheckoutSession(items, successUrl, cancelUrl);
-      const session = JSON.parse(result) as CheckoutSession;
-
+      let session: CheckoutSession;
+      try {
+        session = JSON.parse(result) as CheckoutSession;
+      } catch {
+        throw new Error('Failed to parse checkout session response');
+      }
       if (!session?.url) {
         throw new Error('Stripe session missing url');
       }
-
       return session;
     },
   });

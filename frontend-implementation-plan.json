@@ -1,73 +1,98 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add Stripe Premium Subscription",
+  "title": "Fix Subscription Method & Add Ad Revenue Monetization",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Integrate Stripe Checkout on the frontend for Premium subscription purchase",
+      "id": "REQ-1",
+      "summary": "Fix the broken Stripe premium subscription flow end-to-end, ensuring proper checkout session creation, payment page redirection, success/failure handling, and subscription status updates",
       "acceptanceCriteria": [
-        "The Upgrade page shows a 'Go Premium' button for free-tier users",
-        "Clicking the button initiates a Stripe Checkout session",
-        "After successful payment, the user's subscription status is updated to premium in the backend",
-        "The Upgrade page reflects the updated premium status after payment"
+        "Clicking the subscribe/upgrade button on the Upgrade page initiates a Stripe checkout session and redirects to the Stripe payment page",
+        "After successful payment, the user is redirected to /payment-success, their subscription status is updated to premium, and a success message is shown",
+        "After cancelled/failed payment, the user is redirected to /payment-failure with a retry option",
+        "The Settings page correctly displays 'Premium' tier after a successful subscription",
+        "The UpgradePrompt component is hidden for users with an active premium subscription",
+        "The backend correctly stores and returns subscription status per user principal"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Upgrade.tsx",
+          "path": "frontend/src/hooks/useCreateCheckoutSession.ts",
           "operation": "modify",
-          "description": "Replace the useUpgradeAccount hook with useCreateCheckoutSession. Add a 'Go Premium' button that calls createCheckoutSession with a ShoppingItem for the premium subscription. On success, validate that session.url exists, then redirect to session.url using window.location.href (not router navigation). Show appropriate loading states and error messages. Use the stripe component to support Stripe payment flow. Verify the component's usage instructions before implementing."
+          "description": "Fix the checkout session hook to properly parse the JSON response from createCheckoutSession, validate that the session includes a non-empty url field, and throw an error if missing. Ensure the mutation returns both id and url from the parsed CheckoutSession type. Verify the Stripe component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/hooks/useCreateCheckoutSession.ts",
-          "operation": "create",
-          "description": "Create a mutation hook that calls actor.createCheckoutSession with an array of ShoppingItem objects, successUrl set to `${baseUrl}/payment-success`, and cancelUrl set to `${baseUrl}/payment-failure`. Parse the JSON result to extract the CheckoutSession object containing id and url fields. Validate that session.url is non-empty before returning; throw an error if missing. Return the parsed CheckoutSession. Use the stripe component to support Stripe payment flow. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/pages/Upgrade.tsx",
+          "operation": "modify",
+          "description": "Fix the checkout flow to properly handle the CheckoutSession result from useCreateCheckoutSession. After successful mutation, validate that session.url exists and is non-empty, then redirect using window.location.href = session.url (not router navigation). Add error handling to display a user-friendly message if session.url is missing or invalid. Never navigate to /undefined."
         },
         {
           "path": "frontend/src/pages/PaymentSuccess.tsx",
-          "operation": "create",
-          "description": "Create a success page component that displays a confirmation message for successful premium subscription payment. Extract the session_id from URL query parameters. Call actor.getStripeSessionStatus(sessionId) to verify payment completion. If the session status is 'completed', call actor.setSubscriptionStatus with the user's principal and 'premium' status. Invalidate the subscription status query cache. Show a success message with a link to return to the Upgrade page or Home. Handle loading and error states appropriately. Use the stripe component to support Stripe payment flow. Verify the component's usage instructions before implementing."
+          "operation": "modify",
+          "description": "Fix the payment success page to extract the session_id from URL parameters, call getStripeSessionStatus to verify the payment, then call setSubscriptionStatus with the authenticated user's principal and 'premium' status to upgrade the user. Display loading, error, or success states appropriately. Invalidate subscription status queries after successful upgrade."
         },
         {
           "path": "frontend/src/pages/PaymentFailure.tsx",
-          "operation": "create",
-          "description": "Create a failure page component that displays an error message when payment is cancelled or fails. Show a 'Try Again' button that navigates back to the Upgrade page. Provide a link to return to Home. Use the stripe component to support Stripe payment flow. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Add two new routes: '/payment-success' mapped to PaymentSuccess component and '/payment-failure' mapped to PaymentFailure component. Import both components at the top of the file. These routes handle the Stripe checkout redirect URLs after payment processing."
+          "description": "Enhance the payment failure page to provide a clear retry option that navigates back to the Upgrade page (/upgrade) so users can attempt the subscription flow again. Ensure the home page button also works correctly."
         },
         {
-          "path": "frontend/src/hooks/useSetSubscriptionStatus.ts",
-          "operation": "create",
-          "description": "Create a mutation hook that calls actor.setSubscriptionStatus(user: Principal, status: SubscriptionStatus). On success, invalidate the 'userSubscriptionStatus' query key to refresh subscription data across the app. This hook is used after successful Stripe payment to mark the user as premium."
+          "path": "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
+          "operation": "modify",
+          "description": "Review and ensure the subscription status hook correctly fetches the user's tier from the backend at all times, with proper cache invalidation when status changes. Verify it returns an object with tier ('free' or 'premium') and feature flags."
+        },
+        {
+          "path": "frontend/src/pages/Settings.tsx",
+          "operation": "modify",
+          "description": "Verify that the Settings page correctly displays the user's subscription tier using useGetUserSubscriptionStatus, showing 'Premium' when the user has an active premium subscription and 'Free' otherwise."
+        },
+        {
+          "path": "frontend/src/components/UpgradePrompt.tsx",
+          "operation": "modify",
+          "description": "Fix the UpgradePrompt component to check the user's subscription status using useGetUserSubscriptionStatus and hide the component entirely when the user has an active premium subscription. Only show the upgrade prompt to free-tier users."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Replace hardcoded subscription status with real backend call",
+      "summary": "Add an ad revenue dashboard UI showing total earnings and per-video breakdown, with automatic ad impression recording after 10 seconds of video playback",
       "acceptanceCriteria": [
-        "useGetUserSubscriptionStatus fetches subscription status from the backend actor",
-        "The UpgradePrompt component correctly hides for premium users based on real backend data",
-        "The Settings page correctly shows the user's real subscription tier"
+        "Authenticated users see a 'Ad Revenue' card/section in their Profile or Settings page",
+        "Total earnings are displayed in USD with two decimal places",
+        "A per-video table/list shows video title, impression count, and estimated earnings",
+        "An ad impression is automatically recorded after 10 seconds of video playback on the VideoPlayer page",
+        "Revenue data refreshes when the user navigates to the earnings section",
+        "Non-authenticated users do not see the ad revenue section"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
-          "operation": "modify",
-          "description": "Replace the hardcoded return value with a real query that calls actor.getSubscriptionStatus() to fetch the authenticated user's subscription status from the backend. Use useQuery with queryKey ['userSubscriptionStatus'] and enable the query only when the actor is available and not fetching. Return the subscription status (free or premium) along with loading and error states."
+          "path": "frontend/src/hooks/useGetAdRevenueForCaller.ts",
+          "operation": "create",
+          "description": "Create a React Query hook that fetches the authenticated caller's total ad revenue via actor.getAdRevenueForCaller(). Enable the query only when actor is available and user is authenticated. Return the total revenue as a number."
         },
         {
-          "path": "frontend/src/components/UpgradePrompt.tsx",
-          "operation": "modify",
-          "description": "Ensure the component uses useGetUserSubscriptionStatus to fetch real subscription data. The prompt should only render when subscriptionStatus is 'free'. Hide the prompt while loading subscription data or when the user is premium. No changes needed if already correctly wired to the hook."
+          "path": "frontend/src/hooks/useGetAdRevenueForVideo.ts",
+          "operation": "create",
+          "description": "Create a React Query hook that fetches ad revenue data for a specific video ID via actor.getAdRevenueForVideo(videoId). Return an object containing impressions (bigint) and totalRevenue (number). Enable only when actor is available."
         },
         {
-          "path": "frontend/src/pages/Settings.tsx",
+          "path": "frontend/src/hooks/useRecordAdImpression.ts",
+          "operation": "create",
+          "description": "Create a React Query mutation hook that calls actor.recordAdImpression(videoId) to log an ad view. Invalidate ad revenue queries on success. Handle errors gracefully without showing toast notifications to avoid disrupting video playback."
+        },
+        {
+          "path": "frontend/src/components/AdRevenueDashboard.tsx",
+          "operation": "create",
+          "description": "Create a dashboard component that displays total ad earnings using useGetAdRevenueForCaller formatted in USD with two decimal places. Fetch the user's uploaded videos via useVideos filtered by the authenticated user's principal. For each video, fetch ad revenue data using useGetAdRevenueForVideo and display a table/list showing video title, impression count, and estimated earnings. Show loading skeletons while data is fetching. Only render for authenticated users."
+        },
+        {
+          "path": "frontend/src/pages/Profile.tsx",
           "operation": "modify",
-          "description": "Replace any hardcoded or mock subscription status display with a call to useGetUserSubscriptionStatus. Show the user's real subscription tier (Free or Premium) fetched from the backend. Display a loading skeleton while the subscription status is being fetched. No changes needed if already correctly wired to the hook."
+          "description": "Add an 'Ad Revenue' section to the authenticated user's Profile page by rendering the AdRevenueDashboard component below the user info and above or alongside the videos/photos tabs. Ensure it's visible only to the profile owner (authenticated user viewing their own profile)."
+        },
+        {
+          "path": "frontend/src/pages/VideoPlayer.tsx",
+          "operation": "modify",
+          "description": "Add logic to automatically record an ad impression after 10 seconds of actual video playback (not just page load). Use a useEffect with a timer that tracks video.currentTime and calls the useRecordAdImpression mutation when the threshold is reached. Ensure the impression is recorded only once per session per video."
         }
       ]
     }

@@ -2,14 +2,15 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-integrate-stripe-checkout-on-the-frontend-so-authenticated-users-can-purchase-a-premium-subscription-add-a-checkout-flow-on-the-upgrade-page-that-initiates-a-stripe-payment-session-on-successful-payment-confirmation-call-the-backend-to-mark-the-user-as-premium",
-      "featureTitle": "Integrate Stripe Checkout on the frontend so authenticated users can purchase a Premium subscription. Add a checkout flow on the Upgrade page that initiates a Stripe payment session. On successful payment confirmation, call the backend to mark the user as premium.",
+      "featureId": "feature-fix-the-broken-stripe-premium-subscription-flow-end-to-end-the-createcheckoutsession-backend-call-must-correctly-generate-a-stripe-checkout-url-the-usecreatecheckoutsession-hook-must-properly-redirect-the-user-to-the-stripe-hosted-payment-page-after-payment-paymentsuccess-tsx-must-verify-the-session-and-call-setsubscriptionstatus-to-upgrade-the-user-to-premium-after-payment-failure-cancellation-paymentfailure-tsx-must-allow-the-user-to-retry-the-usegetusersubscriptionstatus-hook-must-reflect-the-correct-tier-free-or-premium-from-the-backend-at-all-times",
+      "featureTitle": "Fix the broken Stripe premium subscription flow end-to-end. The `createCheckoutSession` backend call must correctly generate a Stripe checkout URL. The `useCreateCheckoutSession` hook must properly redirect the user to the Stripe-hosted payment page. After payment, `PaymentSuccess.tsx` must verify the session and call `setSubscriptionStatus` to upgrade the user to premium. After payment failure/cancellation, `PaymentFailure.tsx` must allow the user to retry. The `useGetUserSubscriptionStatus` hook must reflect the correct tier ('free' or 'premium') from the backend at all times.",
       "files": [
-        "frontend/src/App.tsx",
+        "frontend/src/components/UpgradePrompt.tsx",
         "frontend/src/hooks/useCreateCheckoutSession.ts",
-        "frontend/src/hooks/useSetSubscriptionStatus.ts",
+        "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
         "frontend/src/pages/PaymentFailure.tsx",
         "frontend/src/pages/PaymentSuccess.tsx",
+        "frontend/src/pages/Settings.tsx",
         "frontend/src/pages/Upgrade.tsx"
       ],
       "components": [
@@ -24,15 +25,20 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-replace-the-hardcoded-free-tier-return-in-usegetusersubscriptionstatus-ts-with-a-real-backend-call-that-fetches-the-authenticated-user-s-subscription-status",
-      "featureTitle": "Replace the hardcoded free-tier return in useGetUserSubscriptionStatus.ts with a real backend call that fetches the authenticated user's subscription status.",
+      "featureId": "feature-add-an-ad-revenue-dashboard-ui-create-a-new-ad-revenue-section-visible-in-the-user-s-profile-page-and-or-settings-page-for-authenticated-users-it-must-display-total-ad-earnings-fetched-via-getadrevenueforcaller-a-per-video-breakdown-showing-each-video-s-title-total-impressions-and-estimated-revenue-simulate-an-ad-impression-by-calling-recordadimpression-when-a-video-has-been-watched-for-at-least-10-seconds-on-the-videoplayer-page",
+      "featureTitle": "Add an ad revenue dashboard UI. Create a new 'Ad Revenue' section visible in the user's Profile page and/or Settings page for authenticated users. It must display: total ad earnings (fetched via `getAdRevenueForCaller()`), a per-video breakdown showing each video's title, total impressions, and estimated revenue. Simulate an ad impression by calling `recordAdImpression` when a video has been watched for at least 10 seconds on the VideoPlayer page.",
       "files": [
-        "frontend/src/hooks/useGetUserSubscriptionStatus.ts"
+        "frontend/src/components/AdRevenueDashboard.tsx",
+        "frontend/src/hooks/useGetAdRevenueForCaller.ts",
+        "frontend/src/hooks/useGetAdRevenueForVideo.ts",
+        "frontend/src/hooks/useRecordAdImpression.ts",
+        "frontend/src/pages/Profile.tsx",
+        "frontend/src/pages/VideoPlayer.tsx"
       ],
       "components": [
         "blob-storage@4.0.0",

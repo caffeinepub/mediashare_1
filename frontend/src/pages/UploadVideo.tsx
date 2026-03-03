@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useVideoUpload } from '../hooks/useVideoUpload';
-import { UpgradePrompt } from '../components/UpgradePrompt';
+import UpgradePrompt from '../components/UpgradePrompt';
 import { ThumbnailSelector } from '../components/ThumbnailSelector';
 import { TagInput } from '../components/TagInput';
 import { Button } from '@/components/ui/button';
@@ -42,17 +42,13 @@ export function UploadVideo() {
   }, [uploadedVideoBlob]);
 
   const validateFile = (file: File): string | null => {
-    // Check file type
     if (!ACCEPTED_VIDEO_FORMATS.includes(file.type)) {
       return `Invalid file format. Please upload a video file (MP4, MOV, WebM, or OGG).`;
     }
-
-    // Check file size
     const fileSizeMB = file.size / 1024 / 1024;
     if (fileSizeMB > MAX_FILE_SIZE_MB) {
       return `File size exceeds ${MAX_FILE_SIZE_MB}MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`;
     }
-
     return null;
   };
 
@@ -61,7 +57,6 @@ export function UploadVideo() {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       const error = validateFile(selectedFile);
-      
       if (error) {
         setValidationError(error);
         setFile(null);
@@ -76,7 +71,6 @@ export function UploadVideo() {
     e.preventDefault();
     if (!file || !title.trim()) return;
 
-    // Validate again before upload
     const error = validateFile(file);
     if (error) {
       setValidationError(error);
@@ -88,11 +82,9 @@ export function UploadVideo() {
       if (result) {
         setUploadedVideoId(result.videoId);
         setUploadedVideoBlob(result.videoBlob);
-        // Invalidate videos query to refresh the homepage
         queryClient.invalidateQueries({ queryKey: ['videos'] });
       }
     } catch (err) {
-      // Error is handled by the mutation
       console.error('Upload failed:', err);
     }
   };
@@ -115,7 +107,6 @@ export function UploadVideo() {
   };
 
   const handleThumbnailComplete = () => {
-    // Navigate to the video player page
     if (uploadedVideoId) {
       navigate({ to: '/video/$id', params: { id: uploadedVideoId } });
     }
@@ -252,11 +243,7 @@ export function UploadVideo() {
 
                 <div className="space-y-2">
                   <Label htmlFor="tags">Tags</Label>
-                  <TagInput
-                    tags={tags}
-                    onChange={setTags}
-                    disabled={isUploading}
-                  />
+                  <TagInput tags={tags} onChange={setTags} disabled={isUploading} />
                 </div>
 
                 {isUploading && (
@@ -291,7 +278,11 @@ export function UploadVideo() {
                 )}
 
                 <div className="flex gap-3">
-                  <Button type="submit" disabled={!file || !title.trim() || isUploading || !!validationError} className="flex-1">
+                  <Button
+                    type="submit"
+                    disabled={!file || !title.trim() || isUploading || !!validationError}
+                    className="flex-1"
+                  >
                     {isUploading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />

@@ -1,34 +1,26 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useVideo } from '../hooks/useVideo';
-import { useVideos } from '../hooks/useVideos';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useVideoLike } from '../hooks/useVideoLike';
-import { useIncrementVideoView } from '../hooks/useIncrementVideoView';
-import { useSubscribe } from '../hooks/useSubscribe';
-import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
+import { ThumbsUp, Eye, Clock, Tag, Edit2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Heart, Bell, ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useVideo } from '../hooks/useVideo';
+import { useVideoLike } from '../hooks/useVideoLike';
+import { useIncrementVideoView } from '../hooks/useIncrementVideoView';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useVideos } from '../hooks/useVideos';
+import { useRecordAdImpression } from '../hooks/useRecordAdImpression';
 import { CommentSection } from '../components/CommentSection';
-import { ChannelNameDisplay } from '../components/ChannelNameDisplay';
-import { VideoEditModal } from '../components/VideoEditModal';
 import { VideoCard } from '../components/VideoCard';
+import { ChannelNameDisplay } from '../components/ChannelNameDisplay';
 import { VideoRating } from '../components/VideoRating';
+import { VideoRatingDisplay } from '../components/VideoRatingDisplay';
 import { ShareButton } from '../components/ShareButton';
-import { formatViewCount } from '../utils/formatters';
-import { useMemo, useState, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useDeleteVideo } from '../hooks/useDeleteVideo';
+import { VideoEditModal } from '../components/VideoEditModal';
+import { DeleteVideoButton } from '../components/DeleteVideoButton';
+import { formatViewCount, formatTimeAgo } from '../utils/formatters';
+
+const AD_IMPRESSION_THRESHOLD_SECONDS = 10;
 
 export default function VideoPlayer() {
   const { id } = useParams({ from: '/video/$id' });
@@ -36,152 +28,88 @@ export default function VideoPlayer() {
   const { identity } = useInternetIdentity();
   const { data: video, isLoading, error } = useVideo(id);
   const { data: allVideos } = useVideos();
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const { mutate: likeVideo, isPending: isLiking } = useVideoLike();
-  const { mutate: incrementView } = useIncrementVideoView();
-  const { mutate: subscribe, isPending: isSubscribing } = useSubscribe();
-  const { data: isSubscribed } = useSubscriptionStatus(video?.uploader);
-  const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
+  const likeVideoMutation = useVideoLike();
+  const incrementViewMutation = useIncrementVideoView();
+  const recordAdImpressionMutation = useRecordAdImpression();
 
-  // Refs for view count tracking
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewCountedRef = useRef(false);
+  const adImpressionRecordedRef = useRef(false);
   const watchedSecondsRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
 
-  // Keep a stable ref to incrementView so the effect doesn't re-run when the
-  // mutation function reference changes between renders.
-  const incrementViewRef = useRef(incrementView);
-  useEffect(() => {
-    incrementViewRef.current = incrementView;
-  }, [incrementView]);
+  // Keep stable refs to mutations so effects don't re-run on every render
+  const incrementViewRef = useRef(incrementViewMutation);
+  const recordAdImpressionRef = useRef(recordAdImpressionMutation);
 
-  // Increment view count after 5 seconds of actual playback (for all users).
-  // Only depend on `id` so the tracking state is reset only when the video changes,
-  // not on every render caused by a new `incrementView` reference.
-  useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl || !id) return;
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-    // Reset tracking when video id changes
+  useEffect(() => {
+    incrementViewRef.current = incrementViewMutation;
+  }, [incrementViewMutation]);
+
+  useEffect(() => {
+    recordAdImpressionRef.current = recordAdImpressionMutation;
+  }, [recordAdImpressionMutation]);
+
+  // Reset tracking state when video ID changes
+  useEffect(() => {
     viewCountedRef.current = false;
+    adImpressionRecordedRef.current = false;
     watchedSecondsRef.current = 0;
     lastTimeRef.current = null;
+  }, [id]);
 
-    const handleTimeUpdate = () => {
-      if (viewCountedRef.current) return;
+  // Track playback time for view count and ad impression
+  const handleTimeUpdate = useCallback(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
 
-      const currentTime = videoEl.currentTime;
+    const currentTime = videoEl.currentTime;
 
-      if (lastTimeRef.current !== null && !videoEl.paused) {
-        const delta = currentTime - lastTimeRef.current;
-        // Only count forward playback (not seeking backwards or large jumps)
-        if (delta > 0 && delta < 2) {
-          watchedSecondsRef.current += delta;
-        }
+    if (lastTimeRef.current !== null) {
+      const delta = currentTime - lastTimeRef.current;
+      // Only count forward progress (not seeking or large jumps)
+      if (delta > 0 && delta < 2) {
+        watchedSecondsRef.current += delta;
       }
-      lastTimeRef.current = currentTime;
-
-      // Trigger view count after 5 seconds of actual watch time
-      if (watchedSecondsRef.current >= 5 && !viewCountedRef.current) {
-        viewCountedRef.current = true;
-        incrementViewRef.current(id, {
-          onError: (err) => {
-            console.error('View increment failed:', err);
-          },
-        });
-      }
-    };
-
-    const handleSeeked = () => {
-      // Reset lastTime on seek to avoid counting skipped time
-      lastTimeRef.current = videoEl.currentTime;
-    };
-
-    const handlePlay = () => {
-      // Sync lastTime when playback resumes
-      lastTimeRef.current = videoEl.currentTime;
-    };
-
-    videoEl.addEventListener('timeupdate', handleTimeUpdate);
-    videoEl.addEventListener('seeked', handleSeeked);
-    videoEl.addEventListener('play', handlePlay);
-
-    return () => {
-      videoEl.removeEventListener('timeupdate', handleTimeUpdate);
-      videoEl.removeEventListener('seeked', handleSeeked);
-      videoEl.removeEventListener('play', handlePlay);
-    };
-  }, [id]); // Only re-run when the video id changes
-
-  // Use ExternalBlob.getDirectURL() for streaming video content
-  const videoUrl = useMemo(() => {
-    if (!video?.file) return null;
-    return video.file.getDirectURL();
-  }, [video?.file]);
-
-  // Check if current user is the video owner
-  const isOwner = useMemo(() => {
-    if (!video || !identity) return false;
-    return video.uploader.toString() === identity.getPrincipal().toString();
-  }, [video, identity]);
-
-  // Get related videos (same uploader or recent videos)
-  const relatedVideos = useMemo(() => {
-    if (!allVideos || !video) return [];
-    
-    // Filter out current video and prioritize same uploader
-    const sameUploader = allVideos.filter(
-      v => v.id !== id && v.uploader.toString() === video.uploader.toString()
-    );
-    
-    const otherVideos = allVideos.filter(
-      v => v.id !== id && v.uploader.toString() !== video.uploader.toString()
-    );
-    
-    // Combine and limit to 10 videos
-    return [...sameUploader, ...otherVideos].slice(0, 10);
-  }, [allVideos, video, id]);
-
-  const handleLike = () => {
-    if (!identity) {
-      toast.error('Please sign in to like videos');
-      return;
     }
-    likeVideo(id);
-  };
+    lastTimeRef.current = currentTime;
 
-  const handleSubscribe = () => {
-    if (!identity) {
-      toast.error('Please sign in to subscribe');
-      return;
+    // Record view after 5 seconds of actual playback
+    if (!viewCountedRef.current && watchedSecondsRef.current >= 5) {
+      viewCountedRef.current = true;
+      incrementViewRef.current.mutate(id);
     }
-    if (!video) return;
-    subscribe({ channelPrincipal: video.uploader });
-  };
 
-  const handleDeleteConfirm = () => {
-    deleteVideo(id, {
-      onSuccess: () => {
-        navigate({ to: '/' });
-      },
-    });
-  };
+    // Record ad impression after 10 seconds of actual playback
+    if (!adImpressionRecordedRef.current && watchedSecondsRef.current >= AD_IMPRESSION_THRESHOLD_SECONDS) {
+      adImpressionRecordedRef.current = true;
+      recordAdImpressionRef.current.mutate(id);
+    }
+  }, [id]);
 
-  // Truncate description for collapsed state
-  const shouldTruncate = video?.description && video.description.length > 150;
-  const displayDescription = descriptionExpanded || !shouldTruncate
-    ? video?.description
-    : video?.description.slice(0, 150) + '...';
+  const isOwner =
+    identity && video
+      ? video.uploader.toString() === identity.getPrincipal().toString()
+      : false;
+
+  const relatedVideos = allVideos?.filter((v) => v.id !== id).slice(0, 6) ?? [];
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading video...</p>
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <Skeleton className="w-full aspect-video rounded-xl" />
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-lg" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -189,221 +117,149 @@ export default function VideoPlayer() {
 
   if (error || !video) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <p className="text-destructive mb-4">Failed to load video</p>
-          <Button onClick={() => navigate({ to: '/videos' })}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Videos
-          </Button>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 py-6 text-center">
+        <p className="text-destructive text-lg">Video not found or failed to load.</p>
+        <Button variant="link" onClick={() => navigate({ to: '/' })}>
+          Back to Home
+        </Button>
       </div>
     );
   }
 
+  const videoUrl = video.file.getDirectURL();
+
   return (
-    <div className="container mx-auto px-4 py-6">
-      {/* Two-column layout: main content + sidebar */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Main content area */}
-        <div className="flex-1 min-w-0">
-          {/* Video player */}
-          <div className="bg-card rounded-lg overflow-hidden shadow-lg mb-4">
-            {videoUrl ? (
-              <video
-                ref={videoRef}
-                controls
-                className="w-full aspect-video bg-black"
-                src={videoUrl}
-                controlsList="nodownload"
-              >
-                Your browser does not support the video tag.
-              </video>
-            ) : (
-              <div className="w-full aspect-video bg-muted flex items-center justify-center">
-                <p className="text-muted-foreground">Video unavailable</p>
-              </div>
-            )}
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Video Column */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Video Player */}
+          <div className="relative bg-black rounded-xl overflow-hidden aspect-video">
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              controls
+              className="w-full h-full"
+              onTimeUpdate={handleTimeUpdate}
+              onSeeked={() => {
+                lastTimeRef.current = videoRef.current?.currentTime ?? null;
+              }}
+            />
           </div>
 
-          {/* Video title */}
-          <div className="mb-3">
-            <h1 className="text-xl sm:text-2xl font-bold">{video.title}</h1>
-          </div>
+          {/* Video Info */}
+          <div className="space-y-3">
+            <h1 className="text-xl font-bold text-foreground leading-tight">{video.title}</h1>
 
-          {/* Channel info and action buttons */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 pb-4 border-b">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center shrink-0">
-                  <span className="text-white text-sm font-medium">
-                    {video.uploader.toString().slice(0, 2).toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <div className="font-semibold">
-                    <ChannelNameDisplay principal={video.uploader} />
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatViewCount(video.viewCount)} views • {new Date(Number(video.uploadTime) / 1000000).toLocaleDateString()}
-                  </div>
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Eye className="w-4 h-4" />
+                  {formatViewCount(video.viewCount)} views
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  {formatTimeAgo(video.uploadTime)}
+                </span>
               </div>
-              
-              {!isOwner && (
+
+              <div className="flex items-center gap-2">
                 <Button
-                  onClick={handleSubscribe}
-                  disabled={isSubscribing}
-                  variant={isSubscribed ? "outline" : "default"}
-                  className="gap-2"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => likeVideoMutation.mutate(id)}
+                  disabled={likeVideoMutation.isPending || !identity}
+                  className="flex items-center gap-1"
                 >
-                  <Bell className={`h-4 w-4 ${isSubscribing ? 'animate-pulse' : ''}`} />
-                  {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                  {likeVideoMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ThumbsUp className="w-4 h-4" />
+                  )}
+                  {formatViewCount(video.likeCount)}
                 </Button>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleLike}
-                disabled={isLiking}
-                className="gap-2"
-              >
-                <Heart className={`h-5 w-5 ${isLiking ? 'animate-pulse' : ''}`} />
-                <span className="font-semibold">{Number(video.likeCount)}</span>
-              </Button>
-
-              <ShareButton />
-
-              {/* Owner-only controls — always visible when user is the owner */}
-              {isOwner && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={() => setEditOpen(true)}
-                    className="gap-2"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    <span className="hidden sm:inline">Edit</span>
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="default"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    className="gap-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Delete</span>
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Rating section */}
-          <div className="bg-muted/30 rounded-lg p-4 mb-4 border border-border">
-            <VideoRating videoId={id} />
-          </div>
-
-          {/* Expandable description */}
-          <div className="bg-muted/50 rounded-lg p-4 mb-6">
-            <p className="text-sm whitespace-pre-wrap mb-2">
-              {displayDescription}
-            </p>
-            {shouldTruncate && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDescriptionExpanded(!descriptionExpanded)}
-                className="gap-1 text-xs"
-              >
-                {descriptionExpanded ? (
+                <ShareButton />
+                {isOwner && (
                   <>
-                    Show less <ChevronUp className="h-3 w-3" />
-                  </>
-                ) : (
-                  <>
-                    Show more <ChevronDown className="h-3 w-3" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditModalOpen(true)}
+                    >
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                    <DeleteVideoButton videoId={id} variant="outline" />
                   </>
                 )}
-              </Button>
-            )}
+              </div>
+            </div>
 
-            {video.tags && video.tags.length > 0 && (
-              <div className="mt-3">
-                <div className="flex flex-wrap gap-2">
-                  {video.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
+            {/* Channel Info */}
+            <div className="flex items-center gap-3 py-3 border-t border-border">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-primary font-semibold text-sm">
+                  {video.uploader.toString().slice(0, 2).toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <ChannelNameDisplay principal={video.uploader} />
+                <p className="text-xs text-muted-foreground">Creator</p>
+              </div>
+            </div>
+
+            {/* Description */}
+            {video.description && (
+              <div className="bg-muted/50 rounded-lg p-4">
+                <p className="text-sm text-foreground whitespace-pre-wrap">{video.description}</p>
               </div>
             )}
+
+            {/* Tags */}
+            {video.tags && video.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <Tag className="w-4 h-4 text-muted-foreground mt-0.5" />
+                {video.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Rating */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 border-t border-border">
+              <VideoRatingDisplay videoId={id} />
+              {identity && <VideoRating videoId={id} />}
+            </div>
           </div>
 
-          {/* Comments section */}
+          {/* Comments */}
           <CommentSection videoId={id} />
         </div>
 
-        {/* Related videos sidebar */}
-        <div className="lg:w-96 shrink-0">
-          <div className="sticky top-4">
-            <h2 className="text-lg font-semibold mb-4">Related Videos</h2>
-            <div className="space-y-2">
-              {relatedVideos.length > 0 ? (
-                relatedVideos.map((relatedVideo) => (
-                  <VideoCard
-                    key={relatedVideo.id}
-                    video={relatedVideo}
-                    variant="compact"
-                  />
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No related videos available
-                </p>
-              )}
-            </div>
-          </div>
+        {/* Related Videos Sidebar */}
+        <div className="space-y-3">
+          <h3 className="font-semibold text-foreground">Related Videos</h3>
+          {relatedVideos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No other videos yet.</p>
+          ) : (
+            relatedVideos.map((v) => (
+              <VideoCard key={v.id} video={v} variant="compact" />
+            ))
+          )}
         </div>
       </div>
 
-      {/* Edit modal */}
+      {/* Edit Modal — video is ExtendedVideo, passed directly with separate videoId prop */}
       {isOwner && (
         <VideoEditModal
-          open={editOpen}
-          onOpenChange={setEditOpen}
           video={video}
           videoId={id}
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
         />
       )}
-
-      {/* Delete confirmation dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Video</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this video? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? 'Deleting…' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

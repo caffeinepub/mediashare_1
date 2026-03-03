@@ -1,221 +1,174 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetUserSubscriptionStatus } from '../hooks/useGetUserSubscriptionStatus';
-import { useCreateCheckoutSession } from '../hooks/useCreateCheckoutSession';
-import { useIsStripeConfigured } from '../hooks/useStripeConfig';
-import { StripeSetupModal } from '../components/StripeSetupModal';
+import { Crown, Check, Zap, Shield, Star, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Check, Zap, Loader2, Crown, Sparkles, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { useCreateCheckoutSession } from '../hooks/useCreateCheckoutSession';
+import { useGetUserSubscriptionStatus } from '../hooks/useGetUserSubscriptionStatus';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { StripeSetupModal } from '../components/StripeSetupModal';
+import { useIsStripeConfigured } from '../hooks/useStripeConfig';
+import type { ShoppingItem } from '../backend';
 
-export function Upgrade() {
+const premiumFeatures = [
+  'Upload unlimited videos',
+  'HD & 4K video quality',
+  'Advanced analytics dashboard',
+  'Priority support',
+  'Custom channel branding',
+  'Ad-free experience',
+  'Early access to new features',
+];
+
+const freeFeatures = [
+  'Upload up to 5 videos',
+  'Standard video quality',
+  'Basic analytics',
+  'Community support',
+];
+
+export default function Upgrade() {
   const navigate = useNavigate();
   const { identity } = useInternetIdentity();
-  const { data: subscriptionStatus, isLoading } = useGetUserSubscriptionStatus();
-  const { data: stripeConfigured, isLoading: stripeConfigLoading } = useIsStripeConfigured();
-  const checkoutMutation = useCreateCheckoutSession();
+  const { data: subscriptionData } = useGetUserSubscriptionStatus();
+  const { data: isStripeConfigured } = useIsStripeConfigured();
+  const createCheckoutSession = useCreateCheckoutSession();
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [showStripeSetup, setShowStripeSetup] = useState(false);
 
-  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
-  const isPremium = subscriptionStatus?.tier === 'premium';
+  const isPremium = subscriptionData?.tier === 'premium';
 
   const handleUpgrade = async () => {
-    if (!stripeConfigured) {
+    setCheckoutError(null);
+
+    if (!identity) {
+      navigate({ to: '/' });
+      return;
+    }
+
+    if (!isStripeConfigured) {
       setShowStripeSetup(true);
       return;
     }
 
-    try {
-      const session = await checkoutMutation.mutateAsync([
-        {
-          productName: 'Media Share Premium',
-          productDescription: 'Unlimited uploads, 4K quality, priority support, and no ads',
-          currency: 'usd',
-          priceInCents: BigInt(999),
-          quantity: BigInt(1),
-        },
-      ]);
+    const items: ShoppingItem[] = [
+      {
+        productName: 'Media Share Premium',
+        productDescription: 'Monthly premium subscription with unlimited uploads and HD quality',
+        currency: 'usd',
+        priceInCents: BigInt(999),
+        quantity: BigInt(1),
+      },
+    ];
 
+    try {
+      const session = await createCheckoutSession.mutateAsync(items);
       if (!session?.url) {
         throw new Error('Stripe session missing url');
       }
-
       window.location.href = session.url;
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Please try again later.';
-      toast.error('Checkout failed', { description: message });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to start checkout. Please try again.';
+      setCheckoutError(message);
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="container py-16">
-        <Alert>
-          <AlertDescription>Please sign in to view upgrade options.</AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate({ to: '/' })} className="mt-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Button>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="container py-16 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Loading subscription details...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container py-8 max-w-6xl mx-auto">
-      <Button variant="ghost" onClick={() => navigate({ to: '/' })} className="mb-6">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-
-      <div className="space-y-8">
-        <div className="text-center space-y-3">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
-              <Crown className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-background py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 rounded-full bg-primary/10">
+              <Crown className="w-10 h-10 text-primary" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold">Upgrade to Premium</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Unlock unlimited uploads, higher quality limits, and priority support
+          <h1 className="text-4xl font-bold text-foreground mb-3">Upgrade to Premium</h1>
+          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+            Unlock the full potential of Media Share with our premium plan.
           </p>
         </div>
 
         {isPremium && (
-          <Alert className="max-w-2xl mx-auto border-chart-1 bg-chart-1/10">
-            <Sparkles className="w-4 h-4 text-chart-1" />
-            <AlertDescription className="text-chart-1">
-              You're already on the Premium plan! Enjoy all the benefits.
+          <Alert className="mb-8 border-primary/30 bg-primary/5">
+            <Crown className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-primary font-medium">
+              You already have an active Premium subscription! Enjoy all premium features.
             </AlertDescription>
           </Alert>
         )}
 
-        {!stripeConfigLoading && !stripeConfigured && !isPremium && (
-          <Alert className="max-w-2xl mx-auto">
-            <AlertCircle className="w-4 h-4" />
-            <AlertDescription>
-              Payment system is not yet configured. Admin needs to set up Stripe to enable purchases.
-            </AlertDescription>
+        {checkoutError && (
+          <Alert variant="destructive" className="mb-8">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{checkoutError}</AlertDescription>
           </Alert>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-          {/* Free Tier */}
-          <Card className={subscriptionStatus?.tier === 'free' ? 'border-primary' : ''}>
+        {/* Pricing Cards */}
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
+          {/* Free Plan */}
+          <Card className="border-border">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl">Free</CardTitle>
-                {subscriptionStatus?.tier === 'free' && (
-                  <Badge variant="outline">Current Plan</Badge>
-                )}
+                <CardTitle className="text-xl">Free</CardTitle>
+                <Badge variant="secondary">Current</Badge>
               </div>
-              <CardDescription>Perfect for getting started</CardDescription>
-              <div className="pt-4">
-                <span className="text-4xl font-bold">$0</span>
+              <CardDescription>
+                <span className="text-3xl font-bold text-foreground">$0</span>
                 <span className="text-muted-foreground">/month</span>
-              </div>
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Basic video and photo uploads</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Standard quality (720p)</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Community support</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Public galleries</span>
-                </div>
-              </div>
+            <CardContent>
+              <ul className="space-y-3">
+                {freeFeatures.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
 
-          {/* Premium Tier */}
-          <Card className={`relative ${subscriptionStatus?.tier === 'premium' ? 'border-chart-1' : 'border-primary shadow-lg'}`}>
-            {subscriptionStatus?.tier !== 'premium' && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-gradient-to-r from-chart-1 to-chart-2 text-white border-0">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Recommended
-                </Badge>
-              </div>
-            )}
+          {/* Premium Plan */}
+          <Card className="border-primary/50 shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 left-0 h-1 bg-primary" />
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl flex items-center gap-2">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Crown className="w-5 h-5 text-primary" />
                   Premium
-                  <Crown className="w-5 h-5 text-chart-1" />
                 </CardTitle>
-                {subscriptionStatus?.tier === 'premium' && (
-                  <Badge className="bg-chart-1 text-white">Current Plan</Badge>
-                )}
+                <Badge className="bg-primary text-primary-foreground">Best Value</Badge>
               </div>
-              <CardDescription>For creators who want more</CardDescription>
-              <div className="pt-4">
-                <span className="text-4xl font-bold">$9.99</span>
+              <CardDescription>
+                <span className="text-3xl font-bold text-foreground">$9.99</span>
                 <span className="text-muted-foreground">/month</span>
-              </div>
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-chart-1 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-medium">Unlimited uploads</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-chart-1 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-medium">Higher quality limits (4K)</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-chart-1 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-medium">Priority support</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-chart-1 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-medium">No ads</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-chart-1 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-medium">Advanced analytics</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-chart-1 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-medium">Custom channel branding</span>
-                </div>
-              </div>
+            <CardContent>
+              <ul className="space-y-3 mb-6">
+                {premiumFeatures.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
               {!isPremium && (
                 <Button
-                  className="w-full mt-4 bg-gradient-to-r from-chart-1 to-chart-2 hover:opacity-90"
+                  className="w-full"
                   size="lg"
                   onClick={handleUpgrade}
-                  disabled={checkoutMutation.isPending || stripeConfigLoading}
+                  disabled={createCheckoutSession.isPending}
                 >
-                  {checkoutMutation.isPending ? (
+                  {createCheckoutSession.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Redirecting to checkout...
+                      Processing...
                     </>
                   ) : (
                     <>
@@ -225,46 +178,39 @@ export function Upgrade() {
                   )}
                 </Button>
               )}
+              {isPremium && (
+                <Button className="w-full" size="lg" variant="outline" disabled>
+                  <Crown className="w-4 h-4 mr-2" />
+                  Already Premium
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        <div className="max-w-3xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Frequently Asked Questions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2">Can I cancel anytime?</h3>
-                <p className="text-sm text-muted-foreground">
-                  Yes, you can cancel your Premium subscription at any time. You'll continue to have access until the end of your billing period.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">What payment methods do you accept?</h3>
-                <p className="text-sm text-muted-foreground">
-                  We accept all major credit and debit cards through our secure Stripe payment system.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Is there a free trial?</h3>
-                <p className="text-sm text-muted-foreground">
-                  All new users start with a free account. You can upgrade to Premium at any time to unlock additional features.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">How does billing work?</h3>
-                <p className="text-sm text-muted-foreground">
-                  You'll be charged $9.99/month. Your subscription renews automatically each month until you cancel.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Trust Badges */}
+        <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Secure payment via Stripe
+          </div>
+          <div className="flex items-center gap-2">
+            <Star className="w-4 h-4" />
+            Cancel anytime
+          </div>
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4" />
+            Instant activation
+          </div>
         </div>
       </div>
 
-      <StripeSetupModal open={showStripeSetup} onClose={() => setShowStripeSetup(false)} />
+      {showStripeSetup && (
+        <StripeSetupModal
+          open={showStripeSetup}
+          onClose={() => setShowStripeSetup(false)}
+        />
+      )}
     </div>
   );
 }

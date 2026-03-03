@@ -230,6 +230,11 @@ export interface backendInterface {
     deletePhoto(photoId: string): Promise<void>;
     deleteVideo(videoId: string): Promise<void>;
     downgradeToFree(user: Principal): Promise<void>;
+    getAdRevenueForCaller(): Promise<number>;
+    getAdRevenueForVideo(videoId: string): Promise<{
+        impressions: bigint;
+        totalRevenue: number;
+    }>;
     getAllVideoRatings(videoId: string): Promise<Array<Rating>>;
     getAverageRating(videoId: string): Promise<number>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -244,6 +249,8 @@ export interface backendInterface {
     }>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getSubscriptionStatus(): Promise<SubscriptionStatus>;
+    getTotalAdRevenue(): Promise<number>;
+    getTotalImpressions(): Promise<bigint>;
     getTotalRatings(videoId: string): Promise<bigint>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getUserRatings(): Promise<Array<[string, Rating]>>;
@@ -259,6 +266,7 @@ export interface backendInterface {
     listVideos(): Promise<Array<VideoMetadata>>;
     markThumbnailGenerated(videoId: string, thumbnailBlob: ExternalBlob): Promise<void>;
     rateVideo(videoId: string, stars: bigint): Promise<void>;
+    recordAdImpression(videoId: string): Promise<void>;
     removeThumbnail(videoId: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchVideos(searchTerm: string): Promise<Array<VideoMetadata>>;
@@ -478,6 +486,37 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAdRevenueForCaller(): Promise<number> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAdRevenueForCaller();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAdRevenueForCaller();
+            return result;
+        }
+    }
+    async getAdRevenueForVideo(arg0: string): Promise<{
+        impressions: bigint;
+        totalRevenue: number;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAdRevenueForVideo(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAdRevenueForVideo(arg0);
+            return result;
+        }
+    }
     async getAllVideoRatings(arg0: string): Promise<Array<Rating>> {
         if (this.processError) {
             try {
@@ -620,6 +659,34 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getSubscriptionStatus();
             return from_candid_SubscriptionStatus_n19(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getTotalAdRevenue(): Promise<number> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTotalAdRevenue();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTotalAdRevenue();
+            return result;
+        }
+    }
+    async getTotalImpressions(): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTotalImpressions();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTotalImpressions();
+            return result;
         }
     }
     async getTotalRatings(arg0: string): Promise<bigint> {
@@ -829,6 +896,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.rateVideo(arg0, arg1);
+            return result;
+        }
+    }
+    async recordAdImpression(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.recordAdImpression(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.recordAdImpression(arg0);
             return result;
         }
     }

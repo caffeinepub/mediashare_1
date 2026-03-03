@@ -13,7 +13,10 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import Stripe "stripe/stripe";
 import AccessControl "authorization/access-control";
 import OutCall "http-outcalls/outcall";
+import Float "mo:core/Float";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   // Initialize the access control system on canister instantiation
   let accessControlState = AccessControl.initState();
@@ -100,6 +103,11 @@ actor {
     totalRatings : Nat;
   };
 
+  public type AdRevenue = {
+    impressions : Nat;
+    totalRevenue : Float;
+  };
+
   public type SubscriptionStatus = {
     #free;
     #premium;
@@ -113,6 +121,8 @@ actor {
   let userProfiles = Map.empty<Principal, UserProfile>();
   let ratings = Map.empty<Text, RatingData>();
   let subscriptions = Map.empty<Principal, SubscriptionStatus>();
+  let adRevenue = Map.empty<Text, AdRevenue>();
+  let creatorRevenue = Map.empty<Principal, Float>();
 
   // Stripe integration state
   var stripeConfig : ?Stripe.StripeConfiguration = null;
@@ -794,15 +804,98 @@ actor {
     };
   };
 
-  public func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
+  // Requires authenticated user: session status is used to upgrade the caller's subscription
+  public shared ({ caller }) func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can check Stripe session status");
+    };
     await Stripe.getSessionStatus(getStripeConfiguration(), sessionId, transform);
   };
 
+  // Requires authenticated user: only registered users can create checkout sessions
   public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create checkout sessions");
+    };
     await Stripe.createCheckoutSession(getStripeConfiguration(), caller, items, successUrl, cancelUrl, transform);
   };
 
   public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
     OutCall.transform(input);
+  };
+
+  // ===================================== Ad Revenue System ===================================
+
+  let cpm : Float = 2.0; // $2 per 1000 impressions
+
+  // No auth check needed: any viewer (including guests) can trigger an ad impression
+  public shared ({ caller }) func recordAdImpression(videoId : Text) : async () {
+    let video = switch (videos.get(videoId)) {
+      case (null) { (Runtime.trap("Failed to record impression: video " # videoId # " not found")) };
+      case (?video) { video };
+    };
+
+    let currentRevenue = switch (adRevenue.get(videoId)) {
+      case (null) { { impressions = 0; totalRevenue = 0.0 } };
+      case (?revenue) { revenue };
+    };
+
+    let newImpressions = currentRevenue.impressions + 1;
+    let newRevenue = currentRevenue.totalRevenue + (cpm / 1000.0);
+
+    // Update ad revenue for video and total revenue for the creator
+    adRevenue.add(videoId, { impressions = newImpressions; totalRevenue = newRevenue });
+
+    let currentCreatorRevenue = switch (creatorRevenue.get(video.uploader)) {
+      case (null) { 0.0 };
+      case (?rev) { rev };
+    };
+    creatorRevenue.add(video.uploader, (currentCreatorRevenue + (cpm / 1000.0)));
+  };
+
+  // Public info: anyone can view ad revenue for a specific video
+  public query ({ caller }) func getAdRevenueForVideo(videoId : Text) : async {
+    impressions : Nat;
+    totalRevenue : Float;
+  } {
+    switch (adRevenue.get(videoId)) {
+      case (null) { { impressions = 0; totalRevenue = 0.0 } };
+      case (?revenue) { revenue };
+    };
+  };
+
+  // Only authenticated users can view their own ad revenue earnings
+  public query ({ caller }) func getAdRevenueForCaller() : async Float {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view their ad revenue");
+    };
+    switch (creatorRevenue.get(caller)) {
+      case (null) { 0.0 };
+      case (?rev) { rev };
+    };
+  };
+
+  // Admin-only: view platform-wide total ad revenue
+  public query ({ caller }) func getTotalAdRevenue() : async Float {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view total ad revenue");
+    };
+    var totalRevenue : Float = 0.0;
+    for ((_, revenue) in adRevenue.entries()) {
+      totalRevenue += revenue.totalRevenue;
+    };
+    totalRevenue;
+  };
+
+  // Admin-only: view platform-wide total impressions
+  public query ({ caller }) func getTotalImpressions() : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view total impressions");
+    };
+    var totalImpressions : Nat = 0;
+    for ((_, revenue) in adRevenue.entries()) {
+      totalImpressions += revenue.impressions;
+    };
+    totalImpressions;
   };
 };

@@ -7,14 +7,14 @@ import { UploadPhoto } from './pages/UploadPhoto';
 import VideoPlayer from './pages/VideoPlayer';
 import PhotoViewer from './pages/PhotoViewer';
 import { Home } from './pages/Home';
-import { Settings } from './pages/Settings';
+import Settings from './pages/Settings';
 import { ChannelProfile } from './pages/ChannelProfile';
-import { Upgrade } from './pages/Upgrade';
+import Upgrade from './pages/Upgrade';
 import { Shorts } from './pages/Shorts';
 import { Subscriptions } from './pages/Subscriptions';
-import { Profile } from './pages/Profile';
-import { PaymentSuccess } from './pages/PaymentSuccess';
-import { PaymentFailure } from './pages/PaymentFailure';
+import Profile from './pages/Profile';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailure from './pages/PaymentFailure';
 
 const rootRoute = createRootRoute({
   component: () => (

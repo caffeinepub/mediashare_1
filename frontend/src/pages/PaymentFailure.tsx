@@ -1,32 +1,30 @@
+import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { XCircle, RefreshCw, Home, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { XCircle, Home, RefreshCw } from 'lucide-react';
 
-export function PaymentFailure() {
+export default function PaymentFailure() {
   const navigate = useNavigate();
 
   return (
-    <div className="container py-16 max-w-lg mx-auto">
-      <Card className="border-destructive">
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-8 h-8 text-destructive" />
+          <div className="flex justify-center mb-4">
+            <XCircle className="w-16 h-16 text-destructive" />
           </div>
           <CardTitle className="text-2xl">Payment Cancelled</CardTitle>
-          <CardDescription className="text-base">
+          <CardDescription>
             Your payment was cancelled or could not be processed. No charges were made.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground text-center">
-            Don't worry — you can try again whenever you're ready. Your free account is still active.
-          </p>
-          <div className="flex flex-col gap-3 pt-2">
-            <Button
-              className="w-full bg-gradient-to-r from-chart-1 to-chart-2 hover:opacity-90"
-              onClick={() => navigate({ to: '/upgrade' })}
-            >
+        <CardContent className="space-y-4">
+          <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
+            <p>If you experienced an issue, please try again. Your account has not been charged.</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button onClick={() => navigate({ to: '/upgrade' })} className="w-full">
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
             </Button>
@@ -35,6 +33,12 @@ export function PaymentFailure() {
               Back to Home
             </Button>
           </div>
+          <p className="text-xs text-center text-muted-foreground">
+            Need help?{' '}
+            <span className="text-primary cursor-pointer hover:underline">
+              Contact support
+            </span>
+          </p>
         </CardContent>
       </Card>
     </div>

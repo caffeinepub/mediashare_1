@@ -2,40 +2,32 @@ import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { SubscriptionStatus } from '../backend';
 
-export type SubscriptionTier = 'free' | 'premium';
-
-export interface SubscriptionStatusResult {
-  tier: SubscriptionTier;
-  features: {
-    unlimitedUploads: boolean;
-    higherQualityLimits: boolean;
-    prioritySupport: boolean;
-    noAds: boolean;
-  };
-}
+export type SubscriptionResult = {
+  tier: 'free' | 'premium';
+  canUploadUnlimited: boolean;
+  hasHDQuality: boolean;
+  hasAdvancedAnalytics: boolean;
+  isAdFree: boolean;
+};
 
 export function useGetUserSubscriptionStatus() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<SubscriptionStatusResult>({
+  return useQuery<SubscriptionResult>({
     queryKey: ['userSubscriptionStatus'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-
       const status = await actor.getSubscriptionStatus();
       const isPremium = status === SubscriptionStatus.premium;
-
       return {
         tier: isPremium ? 'premium' : 'free',
-        features: {
-          unlimitedUploads: isPremium,
-          higherQualityLimits: isPremium,
-          prioritySupport: isPremium,
-          noAds: isPremium,
-        },
+        canUploadUnlimited: isPremium,
+        hasHDQuality: isPremium,
+        hasAdvancedAnalytics: isPremium,
+        isAdFree: isPremium,
       };
     },
-    enabled: !!actor && !isFetching,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!actor && !actorFetching,
+    staleTime: 30_000,
   });
 }

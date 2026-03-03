@@ -152,6 +152,11 @@ export interface _SERVICE {
   'deletePhoto' : ActorMethod<[string], undefined>,
   'deleteVideo' : ActorMethod<[string], undefined>,
   'downgradeToFree' : ActorMethod<[Principal], undefined>,
+  'getAdRevenueForCaller' : ActorMethod<[], number>,
+  'getAdRevenueForVideo' : ActorMethod<
+    [string],
+    { 'impressions' : bigint, 'totalRevenue' : number }
+  >,
   'getAllVideoRatings' : ActorMethod<[string], Array<Rating>>,
   'getAverageRating' : ActorMethod<[string], number>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -169,6 +174,8 @@ export interface _SERVICE {
   >,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
   'getSubscriptionStatus' : ActorMethod<[], SubscriptionStatus>,
+  'getTotalAdRevenue' : ActorMethod<[], number>,
+  'getTotalImpressions' : ActorMethod<[], bigint>,
   'getTotalRatings' : ActorMethod<[string], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getUserRatings' : ActorMethod<[], Array<[string, Rating]>>,
@@ -184,6 +191,7 @@ export interface _SERVICE {
   'listVideos' : ActorMethod<[], Array<VideoMetadata>>,
   'markThumbnailGenerated' : ActorMethod<[string, ExternalBlob], undefined>,
   'rateVideo' : ActorMethod<[string, bigint], undefined>,
+  'recordAdImpression' : ActorMethod<[string], undefined>,
   'removeThumbnail' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchVideos' : ActorMethod<[string], Array<VideoMetadata>>,

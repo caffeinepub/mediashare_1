@@ -1,76 +1,84 @@
 {
   "kind": "build_request",
-  "title": "Add Stripe Premium Subscription",
+  "title": "Fix Subscription Method & Add Ad Revenue Monetization",
   "projectName": "Media Share",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a Premium Subscription tier to the backend: define a subscription status type (free/premium), store per-user subscription state, and expose functions to get and set a user's subscription status.",
-      "target": "backend",
+      "text": "Fix the broken Stripe premium subscription flow end-to-end. The `createCheckoutSession` backend call must correctly generate a Stripe checkout URL. The `useCreateCheckoutSession` hook must properly redirect the user to the Stripe-hosted payment page. After payment, `PaymentSuccess.tsx` must verify the session and call `setSubscriptionStatus` to upgrade the user to premium. After payment failure/cancellation, `PaymentFailure.tsx` must allow the user to retry. The `useGetUserSubscriptionStatus` hook must reflect the correct tier ('free' or 'premium') from the backend at all times.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-20"
+          "msg-1"
         ],
         "quotes": [
-          "jo option pahle samjne main aur implement karne main asan ho add karo"
+          "Subscription method not working"
         ]
       },
       "acceptanceCriteria": [
-        "Backend stores subscription status (free or premium) per user principal",
-        "A query function returns the caller's current subscription status",
-        "An update function allows setting a user's subscription to premium"
+        "Clicking the subscribe/upgrade button on the Upgrade page initiates a Stripe checkout session and redirects to the Stripe payment page",
+        "After successful payment, the user is redirected to /payment-success, their subscription status is updated to premium, and a success message is shown",
+        "After cancelled/failed payment, the user is redirected to /payment-failure with a retry option",
+        "The Settings page correctly displays 'Premium' tier after a successful subscription",
+        "The UpgradePrompt component is hidden for users with an active premium subscription",
+        "The backend correctly stores and returns subscription status per user principal"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Integrate Stripe Checkout on the frontend so authenticated users can purchase a Premium subscription. Add a checkout flow on the Upgrade page that initiates a Stripe payment session. On successful payment confirmation, call the backend to mark the user as premium.",
-      "target": "frontend",
+      "text": "Add an ad revenue system to the backend. Implement a data model to track ad impressions and revenue per video and per creator. Add backend endpoints: `recordAdImpression(videoId)` to log an ad view and accrue simulated revenue to the video uploader, `getAdRevenueForCaller()` to return the total ad revenue earned by the authenticated caller, and `getAdRevenueForVideo(videoId)` to return revenue for a specific video. Revenue should be calculated at a fixed simulated CPM rate (e.g., $2.00 per 1000 impressions).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-20"
+          "msg-1"
         ],
         "quotes": [
-          "Premium Subscription add karein"
+          "add ad revenue method"
         ]
       },
       "acceptanceCriteria": [
-        "The Upgrade page shows a 'Go Premium' button for free-tier users",
-        "Clicking the button initiates a Stripe Checkout session",
-        "After successful payment, the user's subscription status is updated to premium in the backend",
-        "The Upgrade page reflects the updated premium status after payment"
+        "Backend exposes `recordAdImpression(videoId: Text) : async ()` that increments impression count and accrues revenue for the video owner",
+        "Backend exposes `getAdRevenueForCaller() : async Float` returning total earnings for the authenticated user",
+        "Backend exposes `getAdRevenueForVideo(videoId: Text) : async Float` returning earnings for a specific video",
+        "Revenue is computed at a fixed CPM rate applied to impression count",
+        "Ad impression data is persisted in stable storage"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Replace the hardcoded free-tier return in useGetUserSubscriptionStatus.ts with a real backend call that fetches the authenticated user's subscription status.",
+      "text": "Add an ad revenue dashboard UI. Create a new 'Ad Revenue' section visible in the user's Profile page and/or Settings page for authenticated users. It must display: total ad earnings (fetched via `getAdRevenueForCaller()`), a per-video breakdown showing each video's title, total impressions, and estimated revenue. Simulate an ad impression by calling `recordAdImpression` when a video has been watched for at least 10 seconds on the VideoPlayer page.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-20"
+          "msg-1"
         ],
         "quotes": [
-          "Premium Subscription add karein"
+          "add ad revenue method"
         ]
       },
       "acceptanceCriteria": [
-        "useGetUserSubscriptionStatus fetches subscription status from the backend actor",
-        "The UpgradePrompt component correctly hides for premium users based on real backend data",
-        "The Settings page correctly shows the user's real subscription tier"
+        "Authenticated users see a 'Ad Revenue' card/section in their Profile or Settings page",
+        "Total earnings are displayed in USD with two decimal places",
+        "A per-video table/list shows video title, impression count, and estimated earnings",
+        "An ad impression is automatically recorded after 10 seconds of video playback on the VideoPlayer page",
+        "Revenue data refreshes when the user navigates to the earnings section",
+        "Non-authenticated users do not see the ad revenue section"
       ]
     }
   ],
   "constraints": [
-    "Do not modify files listed in frontend.immutablePaths",
-    "Keep all Motoko logic in backend/main.mo",
-    "Only implement Stripe payment — no other payment providers"
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
+    "All backend logic must remain in a single Motoko actor in backend/main.mo",
+    "Ad revenue is simulated — no real ad network integration required",
+    "Stripe configuration (secret key, allowed countries) must remain configurable via the existing StripeSetupModal"
   ],
   "nonGoals": [
-    "Ad system or ad revenue sharing",
-    "Creator monetization dashboard",
-    "Super Chat or tipping features",
-    "Channel membership subscriptions",
-    "Email login or alternative authentication"
+    "Real ad network integration (Google AdSense, etc.)",
+    "Payout processing or real money transfers for ad revenue",
+    "Creator subscription tiers beyond free/premium",
+    "Playlist features",
+    "Shorts features beyond the existing placeholder"
   ],
   "imageRequirements": {
     "required": [],
