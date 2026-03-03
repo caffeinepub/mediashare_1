@@ -48,7 +48,33 @@ export interface Rating {
   'timestamp' : Time,
   'reviewer' : Principal,
 }
+export interface ShoppingItem {
+  'productName' : string,
+  'currency' : string,
+  'quantity' : bigint,
+  'priceInCents' : bigint,
+  'productDescription' : string,
+}
+export interface StripeConfiguration {
+  'allowedCountries' : Array<string>,
+  'secretKey' : string,
+}
+export type StripeSessionStatus = {
+    'completed' : { 'userPrincipal' : [] | [string], 'response' : string }
+  } |
+  { 'failed' : { 'error' : string } };
+export type SubscriptionStatus = { 'premium' : null } |
+  { 'free' : null };
 export type Time = bigint;
+export interface TransformationInput {
+  'context' : Uint8Array,
+  'response' : http_request_result,
+}
+export interface TransformationOutput {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
+}
 export interface UserProfile {
   'channelName' : [] | [string],
   'name' : string,
@@ -85,6 +111,12 @@ export interface _CaffeineStorageRefillResult {
   'success' : [] | [boolean],
   'topped_up_amount' : [] | [bigint],
 }
+export interface http_header { 'value' : string, 'name' : string }
+export interface http_request_result {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
+}
 export interface _SERVICE {
   '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
   '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
@@ -112,9 +144,14 @@ export interface _SERVICE {
     }
   >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'createCheckoutSession' : ActorMethod<
+    [Array<ShoppingItem>, string, string],
+    string
+  >,
   'deleteComment' : ActorMethod<[string, bigint], undefined>,
   'deletePhoto' : ActorMethod<[string], undefined>,
   'deleteVideo' : ActorMethod<[string], undefined>,
+  'downgradeToFree' : ActorMethod<[Principal], undefined>,
   'getAllVideoRatings' : ActorMethod<[string], Array<Rating>>,
   'getAverageRating' : ActorMethod<[string], number>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -130,14 +167,18 @@ export interface _SERVICE {
       'averageRating' : number,
     }
   >,
+  'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
+  'getSubscriptionStatus' : ActorMethod<[], SubscriptionStatus>,
   'getTotalRatings' : ActorMethod<[string], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getUserRatings' : ActorMethod<[], Array<[string, Rating]>>,
   'getUserStats' : ActorMethod<[Principal], UserStats>,
+  'getUserSubscriptionStatus' : ActorMethod<[Principal], SubscriptionStatus>,
   'getVideo' : ActorMethod<[string], ExtendedVideo>,
   'getVideoMetadata' : ActorMethod<[string], VideoMetadata>,
   'incrementVideoView' : ActorMethod<[string], bigint>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isStripeConfigured' : ActorMethod<[], boolean>,
   'likeVideo' : ActorMethod<[string], undefined>,
   'listPhotos' : ActorMethod<[], Array<PhotoMetadata>>,
   'listVideos' : ActorMethod<[], Array<VideoMetadata>>,
@@ -148,12 +189,19 @@ export interface _SERVICE {
   'searchVideos' : ActorMethod<[string], Array<VideoMetadata>>,
   'setChannelName' : ActorMethod<[string], undefined>,
   'setCustomThumbnail' : ActorMethod<[string, ExternalBlob], undefined>,
+  'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
+  'setSubscriptionStatus' : ActorMethod<
+    [Principal, SubscriptionStatus],
+    undefined
+  >,
+  'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
   'updateComment' : ActorMethod<[string, bigint, string], undefined>,
   'updatePhoto' : ActorMethod<[string, string, string], undefined>,
   'updateVideo' : ActorMethod<
     [string, string, string, Array<string>],
     undefined
   >,
+  'upgradeToPremium' : ActorMethod<[Principal], undefined>,
   'uploadPhoto' : ActorMethod<[string, string, Uint8Array], string>,
   'uploadVideo' : ActorMethod<
     [string, string, Array<string>, ExternalBlob],

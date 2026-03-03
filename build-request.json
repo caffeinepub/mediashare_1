@@ -1,36 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Fix views increment option not working in VideoPlayer",
-  "priority": "high",
+  "title": "Add Stripe Premium Subscription",
+  "projectName": "Media Share",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the view count increment feature in the VideoPlayer page so that view counts are correctly incremented when a user watches a video. The current logic tracks 5 seconds of actual watch time before calling useIncrementVideoView, but this is not triggering reliably. Ensure the increment fires exactly once per valid viewing session and that the updated view count is reflected in the UI afterward.",
-      "target": "frontend",
+      "text": "Add a Premium Subscription tier to the backend: define a subscription status type (free/premium), store per-user subscription state, and expose functions to get and set a user's subscription status.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-20"
         ],
         "quotes": [
-          "Views increase option not working"
+          "jo option pahle samjne main aur implement karne main asan ho add karo"
         ]
       },
       "acceptanceCriteria": [
-        "After a user watches at least 5 seconds of a video, the view count increments by 1",
-        "The increment is called only once per viewing session (no duplicate calls on re-render)",
-        "The updated view count is visible on the VideoPlayer page after the increment",
-        "The useIncrementVideoView mutation is invoked and the related video queries are invalidated on success"
+        "Backend stores subscription status (free or premium) per user principal",
+        "A query function returns the caller's current subscription status",
+        "An update function allows setting a user's subscription to premium"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Integrate Stripe Checkout on the frontend so authenticated users can purchase a Premium subscription. Add a checkout flow on the Upgrade page that initiates a Stripe payment session. On successful payment confirmation, call the backend to mark the user as premium.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Premium Subscription add karein"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Upgrade page shows a 'Go Premium' button for free-tier users",
+        "Clicking the button initiates a Stripe Checkout session",
+        "After successful payment, the user's subscription status is updated to premium in the backend",
+        "The Upgrade page reflects the updated premium status after payment"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Replace the hardcoded free-tier return in useGetUserSubscriptionStatus.ts with a real backend call that fetches the authenticated user's subscription status.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Premium Subscription add karein"
+        ]
+      },
+      "acceptanceCriteria": [
+        "useGetUserSubscriptionStatus fetches subscription status from the backend actor",
+        "The UpgradePrompt component correctly hides for premium users based on real backend data",
+        "The Settings page correctly shows the user's real subscription tier"
       ]
     }
   ],
   "constraints": [
-    "Do not change the backend view count storage logic unless the frontend fix alone is insufficient",
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui"
+    "Do not modify files listed in frontend.immutablePaths",
+    "Keep all Motoko logic in backend/main.mo",
+    "Only implement Stripe payment — no other payment providers"
   ],
   "nonGoals": [
-    "Changing the 5-second watch threshold policy",
-    "Adding view count analytics or tracking beyond the existing increment mechanism",
-    "Fixing any other unrelated VideoPlayer UI issues"
+    "Ad system or ad revenue sharing",
+    "Creator monetization dashboard",
+    "Super Chat or tipping features",
+    "Channel membership subscriptions",
+    "Email login or alternative authentication"
   ],
   "imageRequirements": {
     "required": [],

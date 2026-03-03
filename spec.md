@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the view count increment feature in the VideoPlayer so that it reliably fires once per valid viewing session.
+**Goal:** Add a Stripe-based Premium subscription tier to Media Share, allowing users to upgrade from free to premium via a Stripe Checkout flow.
 
 **Planned changes:**
-- Fix the watch-time tracking logic in the VideoPlayer page so that after 5 seconds of actual playback, `useIncrementVideoView` is called exactly once per session
-- Ensure the increment is not triggered multiple times due to re-renders or state resets
-- Invalidate the related video queries on successful increment so the updated view count is reflected in the UI
+- Add subscription status (free/premium) storage per user in the backend, with query and update functions to get and set subscription status
+- Replace the hardcoded free-tier return in `useGetUserSubscriptionStatus.ts` with a real backend call
+- Add a "Go Premium" button on the Upgrade page that initiates a Stripe Checkout session
+- On successful Stripe payment, call the backend to mark the user as premium and reflect the updated status in the UI
+- Update the UpgradePrompt component and Settings page to use real subscription data from the backend
 
-**User-visible outcome:** After watching at least 5 seconds of a video, the view count increments by 1 and the updated count is immediately visible on the VideoPlayer page.
+**User-visible outcome:** Authenticated users can visit the Upgrade page, click "Go Premium," complete a Stripe payment, and have their account upgraded to premium — with the UI across settings and upgrade prompts reflecting their real premium status.

@@ -1,22 +1,73 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix views increment option not working in VideoPlayer",
+  "title": "Add Stripe Premium Subscription",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Fix the view count increment feature in the VideoPlayer page so that view counts are correctly incremented when a user watches a video",
+      "id": "REQ-2",
+      "summary": "Integrate Stripe Checkout on the frontend for Premium subscription purchase",
       "acceptanceCriteria": [
-        "After a user watches at least 5 seconds of a video, the view count increments by 1",
-        "The increment is called only once per viewing session (no duplicate calls on re-render)",
-        "The updated view count is visible on the VideoPlayer page after the increment",
-        "The useIncrementVideoView mutation is invoked and the related video queries are invalidated on success"
+        "The Upgrade page shows a 'Go Premium' button for free-tier users",
+        "Clicking the button initiates a Stripe Checkout session",
+        "After successful payment, the user's subscription status is updated to premium in the backend",
+        "The Upgrade page reflects the updated premium status after payment"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/VideoPlayer.tsx",
+          "path": "frontend/src/pages/Upgrade.tsx",
           "operation": "modify",
-          "description": "Fix the view increment logic to ensure it fires exactly once per viewing session after 5 seconds of actual watch time. Review the current implementation that tracks playback time and calls useIncrementVideoView. Ensure the increment is triggered using a ref-based flag to prevent duplicate calls on re-render, and that the mutation is invoked with proper error handling. Verify the logic accounts for pauses and only counts actual playback time. After the increment succeeds, ensure the updated view count is reflected in the UI by relying on the mutation's query invalidation."
+          "description": "Replace the useUpgradeAccount hook with useCreateCheckoutSession. Add a 'Go Premium' button that calls createCheckoutSession with a ShoppingItem for the premium subscription. On success, validate that session.url exists, then redirect to session.url using window.location.href (not router navigation). Show appropriate loading states and error messages. Use the stripe component to support Stripe payment flow. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useCreateCheckoutSession.ts",
+          "operation": "create",
+          "description": "Create a mutation hook that calls actor.createCheckoutSession with an array of ShoppingItem objects, successUrl set to `${baseUrl}/payment-success`, and cancelUrl set to `${baseUrl}/payment-failure`. Parse the JSON result to extract the CheckoutSession object containing id and url fields. Validate that session.url is non-empty before returning; throw an error if missing. Return the parsed CheckoutSession. Use the stripe component to support Stripe payment flow. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/PaymentSuccess.tsx",
+          "operation": "create",
+          "description": "Create a success page component that displays a confirmation message for successful premium subscription payment. Extract the session_id from URL query parameters. Call actor.getStripeSessionStatus(sessionId) to verify payment completion. If the session status is 'completed', call actor.setSubscriptionStatus with the user's principal and 'premium' status. Invalidate the subscription status query cache. Show a success message with a link to return to the Upgrade page or Home. Handle loading and error states appropriately. Use the stripe component to support Stripe payment flow. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/PaymentFailure.tsx",
+          "operation": "create",
+          "description": "Create a failure page component that displays an error message when payment is cancelled or fails. Show a 'Try Again' button that navigates back to the Upgrade page. Provide a link to return to Home. Use the stripe component to support Stripe payment flow. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add two new routes: '/payment-success' mapped to PaymentSuccess component and '/payment-failure' mapped to PaymentFailure component. Import both components at the top of the file. These routes handle the Stripe checkout redirect URLs after payment processing."
+        },
+        {
+          "path": "frontend/src/hooks/useSetSubscriptionStatus.ts",
+          "operation": "create",
+          "description": "Create a mutation hook that calls actor.setSubscriptionStatus(user: Principal, status: SubscriptionStatus). On success, invalidate the 'userSubscriptionStatus' query key to refresh subscription data across the app. This hook is used after successful Stripe payment to mark the user as premium."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Replace hardcoded subscription status with real backend call",
+      "acceptanceCriteria": [
+        "useGetUserSubscriptionStatus fetches subscription status from the backend actor",
+        "The UpgradePrompt component correctly hides for premium users based on real backend data",
+        "The Settings page correctly shows the user's real subscription tier"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
+          "operation": "modify",
+          "description": "Replace the hardcoded return value with a real query that calls actor.getSubscriptionStatus() to fetch the authenticated user's subscription status from the backend. Use useQuery with queryKey ['userSubscriptionStatus'] and enable the query only when the actor is available and not fetching. Return the subscription status (free or premium) along with loading and error states."
+        },
+        {
+          "path": "frontend/src/components/UpgradePrompt.tsx",
+          "operation": "modify",
+          "description": "Ensure the component uses useGetUserSubscriptionStatus to fetch real subscription data. The prompt should only render when subscriptionStatus is 'free'. Hide the prompt while loading subscription data or when the user is premium. No changes needed if already correctly wired to the hook."
+        },
+        {
+          "path": "frontend/src/pages/Settings.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded or mock subscription status display with a call to useGetUserSubscriptionStatus. Show the user's real subscription tier (Free or Premium) fetched from the backend. Display a loading skeleton while the subscription status is being fetched. No changes needed if already correctly wired to the hook."
         }
       ]
     }

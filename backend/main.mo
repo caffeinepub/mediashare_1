@@ -1,17 +1,18 @@
-import Time "mo:core/Time";
 import Map "mo:core/Map";
-import Nat "mo:core/Nat";
+import List "mo:core/List";
 import Principal "mo:core/Principal";
-import Runtime "mo:core/Runtime";
-import Iter "mo:core/Iter";
+import Time "mo:core/Time";
 import Text "mo:core/Text";
 import Set "mo:core/Set";
-import List "mo:core/List";
-
+import Nat "mo:core/Nat";
+import Runtime "mo:core/Runtime";
+import Iter "mo:core/Iter";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Stripe "stripe/stripe";
 import AccessControl "authorization/access-control";
+import OutCall "http-outcalls/outcall";
 
 actor {
   // Initialize the access control system on canister instantiation
@@ -99,6 +100,11 @@ actor {
     totalRatings : Nat;
   };
 
+  public type SubscriptionStatus = {
+    #free;
+    #premium;
+  };
+
   let videos = Map.empty<Text, ExtendedVideo>();
   let photos = Map.empty<Text, Photo>();
   let comments = Map.empty<Text, [Comment]>();
@@ -106,6 +112,10 @@ actor {
   let channels = Map.empty<Principal, Text>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   let ratings = Map.empty<Text, RatingData>();
+  let subscriptions = Map.empty<Principal, SubscriptionStatus>();
+
+  // Stripe integration state
+  var stripeConfig : ?Stripe.StripeConfiguration = null;
 
   // User profile management functions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -180,7 +190,6 @@ actor {
     photoId;
   };
 
-  // Only authenticated users can increment view count for a video
   public shared ({ caller }) func incrementVideoView(videoId : Text) : async Nat {
     switch (videos.get(videoId)) {
       case (null) { Runtime.trap("Failed to increment view count: video not found") };
@@ -722,5 +731,78 @@ actor {
         };
       };
     };
+  };
+
+  // ========== Subscription System Functions ==========
+
+  // Get the subscription status of the calling user
+  public query ({ caller }) func getSubscriptionStatus() : async SubscriptionStatus {
+    switch (subscriptions.get(caller)) {
+      case (null) { #free };
+      case (?status) { status };
+    };
+  };
+
+  // Get the subscription status of any user (public info)
+  public query ({ caller }) func getUserSubscriptionStatus(user : Principal) : async SubscriptionStatus {
+    switch (subscriptions.get(user)) {
+      case (null) { #free };
+      case (?status) { status };
+    };
+  };
+
+  // Admin-only: set subscription status for any user
+  public shared ({ caller }) func setSubscriptionStatus(user : Principal, status : SubscriptionStatus) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can set subscription status");
+    };
+    subscriptions.add(user, status);
+  };
+
+  // Admin-only: upgrade a user to premium
+  public shared ({ caller }) func upgradeToPremium(user : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can upgrade users to premium");
+    };
+    subscriptions.add(user, #premium);
+  };
+
+  // Admin-only: downgrade a user to free tier
+  public shared ({ caller }) func downgradeToFree(user : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can downgrade users to free tier");
+    };
+    subscriptions.add(user, #free);
+  };
+
+  // ===================== Stripe Payment Integration ======================
+  public query ({ caller }) func isStripeConfigured() : async Bool {
+    stripeConfig != null;
+  };
+
+  public shared ({ caller }) func setStripeConfiguration(config : Stripe.StripeConfiguration) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can set Stripe configuration");
+    };
+    stripeConfig := ?config;
+  };
+
+  func getStripeConfiguration() : Stripe.StripeConfiguration {
+    switch (stripeConfig) {
+      case (null) { Runtime.trap("Stripe needs to be first configured") };
+      case (?value) { value };
+    };
+  };
+
+  public func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
+    await Stripe.getSessionStatus(getStripeConfiguration(), sessionId, transform);
+  };
+
+  public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
+    await Stripe.createCheckoutSession(getStripeConfiguration(), caller, items, successUrl, cancelUrl, transform);
+  };
+
+  public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
+    OutCall.transform(input);
   };
 };

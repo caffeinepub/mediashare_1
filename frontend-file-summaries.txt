@@ -1,5 +1,5 @@
 {
-  "frontend/src/App.tsx": "Main application router with all routes including the new `/profile` route that renders the Profile page.",
+  "frontend/src/App.tsx": "Main application router with all routes including the two new Stripe payment routes `/payment-success` and `/payment-failure` mapped to their respective page components.",
   "frontend/src/components/Layout.tsx": "Main layout component with sticky header; removed any overflow constraints that could clip dropdowns, keeping the header z-index at 50 while allowing dropdown menus to render above all content.",
   "frontend/src/components/AuthButton.tsx": "Thin wrapper around ProfileDropdownMenu for placement in the header — renders a single profile icon button that opens the unified dropdown.",
   "frontend/src/pages/Home.tsx": "Homepage displaying videos in a responsive YouTube-style grid layout (1-5 columns based on screen size) sorted by upload time in descending order (newest first) with loading states and empty state messaging.",
@@ -33,9 +33,9 @@
   "frontend/src/hooks/useSaveCallerUserProfile.ts": "React mutation hook for saving the current user's profile that calls the backend saveCallerUserProfile method and invalidates profile queries.",
   "frontend/src/hooks/useUserStats.ts": "React Query hook that fetches user statistics (total videos, total photos, account creation date) for a given principal from the backend with 5-minute cache time.",
   "frontend/src/pages/ChannelProfile.tsx": "Channel profile page that detects if the current authenticated user is the channel owner and renders always-visible (not hover-only) Edit and Delete action buttons on each video card for owner-only management.",
-  "frontend/src/hooks/useGetUserSubscriptionStatus.ts": "React Query hook that fetches the current user's subscription status (free or premium tier) with feature flags, currently returning free tier as default until backend implementation is complete.",
+  "frontend/src/hooks/useGetUserSubscriptionStatus.ts": "React Query hook that fetches the current user's real subscription status from the backend via `actor.getSubscriptionStatus()`, mapping the `SubscriptionStatus` enum to a typed result with feature flags.",
   "frontend/src/hooks/useUpgradeAccount.ts": "React Query mutation hook for upgrading user accounts to premium tier with toast notifications, currently throws error until backend implementation is complete.",
-  "frontend/src/pages/Upgrade.tsx": "Upgrade page component displaying subscription tier comparison (Free vs Premium) with feature lists, pricing, FAQ section, and upgrade button for authenticated users.",
+  "frontend/src/pages/Upgrade.tsx": "Upgrade page that uses `useCreateCheckoutSession` to initiate a real Stripe Checkout session when the \"Go Premium\" button is clicked, redirecting to `session.url` via `window.location.href`, with Stripe setup modal for unconfigured state.",
   "frontend/src/components/UpgradePrompt.tsx": "Reusable upgrade prompt card component that displays premium benefits and upgrade call-to-action, only shown to free tier users.",
   "frontend/src/pages/Playlists.tsx": "Playlists management page displaying all user playlists in a grid with create playlist functionality.",
   "frontend/src/pages/PlaylistDetail.tsx": "Playlist detail page showing all videos in a playlist with remove functionality and video metadata.",
@@ -76,5 +76,11 @@
   "frontend/src/hooks/useDeleteVideo.ts": "React Query mutation hook for deleting videos that calls actor.deleteVideo(videoId), invalidates video-related queries on success, and shows toast notifications for success and authorization errors.",
   "frontend/src/components/DeleteVideoButton.tsx": "Reusable delete video button component with confirmation AlertDialog, now accepting `'secondary'` as a valid variant in addition to the other Button variants, triggering the useDeleteVideo mutation on confirmation.",
   "frontend/src/components/ProfileDropdownMenu.tsx": "Unified profile dropdown menu simplified to remove video-specific props (edit/delete video actions moved to VideoPlayer directly); dropdown content uses `z-[200]` to ensure it renders above the bottom nav and header; includes multi-account switcher, navigation items, and sign-out.",
-  "frontend/src/hooks/useMultiAccount.ts": "Custom hook that manages a list of stored accounts (principal, display name, channel name) in localStorage, tracks the currently active principal from the Internet Identity context, and exposes addAccount (logout + re-login), removeAccount, signOutCurrent, and updateActiveAccountName methods."
+  "frontend/src/hooks/useMultiAccount.ts": "Custom hook that manages a list of stored accounts (principal, display name, channel name) in localStorage, tracks the currently active principal from the Internet Identity context, and exposes addAccount (logout + re-login), removeAccount, signOutCurrent, and updateActiveAccountName methods.",
+  "frontend/src/hooks/useCreateCheckoutSession.ts": "React mutation hook that calls `actor.createCheckoutSession` with a ShoppingItem array, parses the JSON result, validates the session URL, and returns the CheckoutSession object.",
+  "frontend/src/hooks/useSetSubscriptionStatus.ts": "React mutation hook that calls `actor.setSubscriptionStatus` with a user Principal and SubscriptionStatus, then invalidates the `userSubscriptionStatus` query cache on success.",
+  "frontend/src/hooks/useStripeConfig.ts": "Two React Query hooks — `useIsStripeConfigured` (query) checks if Stripe is configured on the backend, and `useSetStripeConfiguration` (mutation) saves the Stripe configuration as admin.",
+  "frontend/src/pages/PaymentSuccess.tsx": "Payment success page that reads `session_id` from URL params, calls `actor.getStripeSessionStatus` to verify payment, then calls `actor.setSubscriptionStatus` to activate premium, and shows a success confirmation with navigation links.",
+  "frontend/src/pages/PaymentFailure.tsx": "Payment failure/cancellation page that shows an error message with a \"Try Again\" button linking back to the Upgrade page and a \"Back to Home\" button.",
+  "frontend/src/components/StripeSetupModal.tsx": "Admin modal dialog for configuring Stripe with a secret key and allowed countries list, calling `useSetStripeConfiguration` on save with validation and toast feedback."
 }

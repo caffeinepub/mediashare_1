@@ -25,6 +25,13 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const ShoppingItem = IDL.Record({
+  'productName' : IDL.Text,
+  'currency' : IDL.Text,
+  'quantity' : IDL.Nat,
+  'priceInCents' : IDL.Nat,
+  'productDescription' : IDL.Text,
+});
 export const Rating = IDL.Record({
   'value' : IDL.Nat,
   'timestamp' : Time,
@@ -47,6 +54,17 @@ export const Photo = IDL.Record({
   'description' : IDL.Text,
   'uploader' : IDL.Principal,
   'uploadTime' : Time,
+});
+export const StripeSessionStatus = IDL.Variant({
+  'completed' : IDL.Record({
+    'userPrincipal' : IDL.Opt(IDL.Text),
+    'response' : IDL.Text,
+  }),
+  'failed' : IDL.Record({ 'error' : IDL.Text }),
+});
+export const SubscriptionStatus = IDL.Variant({
+  'premium' : IDL.Null,
+  'free' : IDL.Null,
 });
 export const UserStats = IDL.Record({
   'totalVideosUploaded' : IDL.Nat,
@@ -84,6 +102,28 @@ export const PhotoMetadata = IDL.Record({
   'description' : IDL.Text,
   'uploader' : IDL.Principal,
   'uploadTime' : Time,
+});
+export const StripeConfiguration = IDL.Record({
+  'allowedCountries' : IDL.Vec(IDL.Text),
+  'secretKey' : IDL.Text,
+});
+export const http_header = IDL.Record({
+  'value' : IDL.Text,
+  'name' : IDL.Text,
+});
+export const http_request_result = IDL.Record({
+  'status' : IDL.Nat,
+  'body' : IDL.Vec(IDL.Nat8),
+  'headers' : IDL.Vec(http_header),
+});
+export const TransformationInput = IDL.Record({
+  'context' : IDL.Vec(IDL.Nat8),
+  'response' : http_request_result,
+});
+export const TransformationOutput = IDL.Record({
+  'status' : IDL.Nat,
+  'body' : IDL.Vec(IDL.Nat8),
+  'headers' : IDL.Vec(http_header),
 });
 
 export const idlService = IDL.Service({
@@ -127,9 +167,15 @@ export const idlService = IDL.Service({
       [],
     ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'createCheckoutSession' : IDL.Func(
+      [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
+      [IDL.Text],
+      [],
+    ),
   'deleteComment' : IDL.Func([IDL.Text, IDL.Nat], [], []),
   'deletePhoto' : IDL.Func([IDL.Text], [], []),
   'deleteVideo' : IDL.Func([IDL.Text], [], []),
+  'downgradeToFree' : IDL.Func([IDL.Principal], [], []),
   'getAllVideoRatings' : IDL.Func([IDL.Text], [IDL.Vec(Rating)], ['query']),
   'getAverageRating' : IDL.Func([IDL.Text], [IDL.Float64], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -148,6 +194,8 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
+  'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
+  'getSubscriptionStatus' : IDL.Func([], [SubscriptionStatus], ['query']),
   'getTotalRatings' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -160,10 +208,16 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getUserStats' : IDL.Func([IDL.Principal], [UserStats], ['query']),
+  'getUserSubscriptionStatus' : IDL.Func(
+      [IDL.Principal],
+      [SubscriptionStatus],
+      ['query'],
+    ),
   'getVideo' : IDL.Func([IDL.Text], [ExtendedVideo], ['query']),
   'getVideoMetadata' : IDL.Func([IDL.Text], [VideoMetadata], ['query']),
   'incrementVideoView' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'likeVideo' : IDL.Func([IDL.Text], [], []),
   'listPhotos' : IDL.Func([], [IDL.Vec(PhotoMetadata)], ['query']),
   'listVideos' : IDL.Func([], [IDL.Vec(VideoMetadata)], ['query']),
@@ -174,6 +228,17 @@ export const idlService = IDL.Service({
   'searchVideos' : IDL.Func([IDL.Text], [IDL.Vec(VideoMetadata)], ['query']),
   'setChannelName' : IDL.Func([IDL.Text], [], []),
   'setCustomThumbnail' : IDL.Func([IDL.Text, ExternalBlob], [], []),
+  'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
+  'setSubscriptionStatus' : IDL.Func(
+      [IDL.Principal, SubscriptionStatus],
+      [],
+      [],
+    ),
+  'transform' : IDL.Func(
+      [TransformationInput],
+      [TransformationOutput],
+      ['query'],
+    ),
   'updateComment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [], []),
   'updatePhoto' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'updateVideo' : IDL.Func(
@@ -181,6 +246,7 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'upgradeToPremium' : IDL.Func([IDL.Principal], [], []),
   'uploadPhoto' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
       [IDL.Text],
@@ -213,6 +279,13 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const ShoppingItem = IDL.Record({
+    'productName' : IDL.Text,
+    'currency' : IDL.Text,
+    'quantity' : IDL.Nat,
+    'priceInCents' : IDL.Nat,
+    'productDescription' : IDL.Text,
+  });
   const Rating = IDL.Record({
     'value' : IDL.Nat,
     'timestamp' : Time,
@@ -235,6 +308,17 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
     'uploader' : IDL.Principal,
     'uploadTime' : Time,
+  });
+  const StripeSessionStatus = IDL.Variant({
+    'completed' : IDL.Record({
+      'userPrincipal' : IDL.Opt(IDL.Text),
+      'response' : IDL.Text,
+    }),
+    'failed' : IDL.Record({ 'error' : IDL.Text }),
+  });
+  const SubscriptionStatus = IDL.Variant({
+    'premium' : IDL.Null,
+    'free' : IDL.Null,
   });
   const UserStats = IDL.Record({
     'totalVideosUploaded' : IDL.Nat,
@@ -272,6 +356,25 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
     'uploader' : IDL.Principal,
     'uploadTime' : Time,
+  });
+  const StripeConfiguration = IDL.Record({
+    'allowedCountries' : IDL.Vec(IDL.Text),
+    'secretKey' : IDL.Text,
+  });
+  const http_header = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
+  const http_request_result = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
+  });
+  const TransformationInput = IDL.Record({
+    'context' : IDL.Vec(IDL.Nat8),
+    'response' : http_request_result,
+  });
+  const TransformationOutput = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
   });
   
   return IDL.Service({
@@ -315,9 +418,15 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'createCheckoutSession' : IDL.Func(
+        [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
+        [IDL.Text],
+        [],
+      ),
     'deleteComment' : IDL.Func([IDL.Text, IDL.Nat], [], []),
     'deletePhoto' : IDL.Func([IDL.Text], [], []),
     'deleteVideo' : IDL.Func([IDL.Text], [], []),
+    'downgradeToFree' : IDL.Func([IDL.Principal], [], []),
     'getAllVideoRatings' : IDL.Func([IDL.Text], [IDL.Vec(Rating)], ['query']),
     'getAverageRating' : IDL.Func([IDL.Text], [IDL.Float64], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -336,6 +445,8 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
+    'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
+    'getSubscriptionStatus' : IDL.Func([], [SubscriptionStatus], ['query']),
     'getTotalRatings' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -348,10 +459,16 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getUserStats' : IDL.Func([IDL.Principal], [UserStats], ['query']),
+    'getUserSubscriptionStatus' : IDL.Func(
+        [IDL.Principal],
+        [SubscriptionStatus],
+        ['query'],
+      ),
     'getVideo' : IDL.Func([IDL.Text], [ExtendedVideo], ['query']),
     'getVideoMetadata' : IDL.Func([IDL.Text], [VideoMetadata], ['query']),
     'incrementVideoView' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'likeVideo' : IDL.Func([IDL.Text], [], []),
     'listPhotos' : IDL.Func([], [IDL.Vec(PhotoMetadata)], ['query']),
     'listVideos' : IDL.Func([], [IDL.Vec(VideoMetadata)], ['query']),
@@ -362,6 +479,17 @@ export const idlFactory = ({ IDL }) => {
     'searchVideos' : IDL.Func([IDL.Text], [IDL.Vec(VideoMetadata)], ['query']),
     'setChannelName' : IDL.Func([IDL.Text], [], []),
     'setCustomThumbnail' : IDL.Func([IDL.Text, ExternalBlob], [], []),
+    'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
+    'setSubscriptionStatus' : IDL.Func(
+        [IDL.Principal, SubscriptionStatus],
+        [],
+        [],
+      ),
+    'transform' : IDL.Func(
+        [TransformationInput],
+        [TransformationOutput],
+        ['query'],
+      ),
     'updateComment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [], []),
     'updatePhoto' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'updateVideo' : IDL.Func(
@@ -369,6 +497,7 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'upgradeToPremium' : IDL.Func([IDL.Principal], [], []),
     'uploadPhoto' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
         [IDL.Text],

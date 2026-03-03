@@ -1,14 +1,47 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-03T06:11:02.508Z",
-  "summary": "The diff implements a fix for the view count increment feature in VideoPlayer.tsx by storing the incrementView mutation in a stable ref (incrementViewRef) so the playback-tracking useEffect only depends on id, preventing tracking state from being reset on every render. This addresses all acceptance criteria for REQ-1.",
+  "generatedAt": "2026-03-03T09:04:41.242Z",
+  "summary": "The diff implements all three requirements: REQ-1 (backend subscription status type, storage, get/set functions), REQ-2 (Stripe Checkout on Upgrade page, PaymentSuccess/PaymentFailure pages, post-payment backend update), and REQ-3 (real backend call in useGetUserSubscriptionStatus.ts). Additionally, several features not explicitly requested were implemented, including a StripeSetupModal for admin Stripe configuration, Stripe configuration query/mutation hooks, and a Stripe session status verification flow on the PaymentSuccess page.",
   "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.95,
+  "hallucinated_features": [
+    {
+      "description": "StripeSetupModal component allowing users/admins to configure Stripe secret key and allowed countries from the UI",
+      "reason": "The build request only asks for Stripe Checkout integration. There is no requirement for an in-app Stripe configuration UI or the ability to set a Stripe secret key through the frontend.",
+      "evidence": [
+        "frontend/src/components/StripeSetupModal.tsx",
+        "frontend/src/hooks/useStripeConfig.ts"
+      ]
+    },
+    {
+      "description": "useIsStripeConfigured and useSetStripeConfiguration hooks, and corresponding backend functions for managing Stripe configuration state",
+      "reason": "No requirement mentions a feature to check or set Stripe configuration from the frontend. This is an admin/setup capability not described in the build request.",
+      "evidence": [
+        "frontend/src/hooks/useStripeConfig.ts",
+        "frontend/src/pages/Upgrade.tsx"
+      ]
+    },
+    {
+      "description": "Stripe session status verification on the PaymentSuccess page via actor.getStripeSessionStatus(sessionId)",
+      "reason": "The requirement (REQ-2) only states that after successful payment the user's subscription status should be updated to premium in the backend. Server-side session verification via a backend call to getStripeSessionStatus is an additional feature not specified.",
+      "evidence": [
+        "frontend/src/pages/PaymentSuccess.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.82,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/pages/VideoPlayer.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/components/StripeSetupModal.tsx",
+    "frontend/src/hooks/useCreateCheckoutSession.ts",
+    "frontend/src/hooks/useGetUserSubscriptionStatus.ts",
+    "frontend/src/hooks/useSetSubscriptionStatus.ts",
+    "frontend/src/hooks/useStripeConfig.ts",
+    "frontend/src/pages/PaymentFailure.tsx",
+    "frontend/src/pages/PaymentSuccess.tsx",
+    "frontend/src/pages/Upgrade.tsx",
     "project_state.json"
   ]
 }

@@ -1,24 +1,51 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
-  "known_issues": [
-    "Views increase option not working"
+  "summary": "Video platform (YouTube-like) on Internet Computer with monetization features being added, starting with Stripe Premium Subscription integration.",
+  "architectural_notes": [
+    "Platform runs on Internet Computer (DFINITY) — uses Internet Identity for authentication, not email/password",
+    "Payment processing via Stripe for premium subscriptions"
   ],
-  "isFixRequest": true,
+  "known_issues": [
+    "Build failed twice when attempting to add monetization features simultaneously — breaking into smaller steps"
+  ],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-fix-the-view-count-increment-feature-in-the-videoplayer-page-so-that-view-counts-are-correctly-incremented-when-a-user-watches-a-video-the-current-logic-tracks-5-seconds-of-actual-watch-time-before-calling-useincrementvideoview-but-this-is-not-triggering-reliably-ensure-the-increment-fires-exactly-once-per-valid-viewing-session-and-that-the-updated-view-count-is-reflected-in-the-ui-afterward",
-      "title": "Fix the view count increment feature in the VideoPlayer page so that view counts are correctly incremented when a user watches a video. The current logic tracks 5 seconds of actual watch time before calling useIncrementVideoView, but this is not triggering reliably. Ensure the increment fires exactly once per valid viewing session and that the updated view count is reflected in the UI afterward.",
+      "id": "feature-integrate-stripe-checkout-on-the-frontend-so-authenticated-users-can-purchase-a-premium-subscription-add-a-checkout-flow-on-the-upgrade-page-that-initiates-a-stripe-payment-session-on-successful-payment-confirmation-call-the-backend-to-mark-the-user-as-premium",
+      "title": "Integrate Stripe Checkout on the frontend so authenticated users can purchase a Premium subscription. Add a checkout flow on the Upgrade page that initiates a Stripe payment session. On successful payment confirmation, call the backend to mark the user as premium.",
       "reqIds": [
-        "REQ-1"
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-hardcoded-free-tier-return-in-usegetusersubscriptionstatus-ts-with-a-real-backend-call-that-fetches-the-authenticated-user-s-subscription-status",
+      "title": "Replace the hardcoded free-tier return in useGetUserSubscriptionStatus.ts with a real backend call that fetches the authenticated user's subscription status.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Fix views increment option not working in VideoPlayer",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Stripe Premium Subscription integration for user monetization",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add a Premium Subscription tier to the backend: define a subscription status type (free/premium), store per-user subscription state, and expose functions to get and set a user's subscription status.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Media Share",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

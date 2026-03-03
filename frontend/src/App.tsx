@@ -13,6 +13,8 @@ import { Upgrade } from './pages/Upgrade';
 import { Shorts } from './pages/Shorts';
 import { Subscriptions } from './pages/Subscriptions';
 import { Profile } from './pages/Profile';
+import { PaymentSuccess } from './pages/PaymentSuccess';
+import { PaymentFailure } from './pages/PaymentFailure';
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -100,6 +102,18 @@ const profileRoute = createRoute({
   component: Profile,
 });
 
+const paymentSuccessRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/payment-success',
+  component: PaymentSuccess,
+});
+
+const paymentFailureRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/payment-failure',
+  component: PaymentFailure,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   videosRoute,
@@ -114,6 +128,8 @@ const routeTree = rootRoute.addChildren([
   shortsRoute,
   subscriptionsRoute,
   profileRoute,
+  paymentSuccessRoute,
+  paymentFailureRoute,
 ]);
 
 const router = createRouter({ routeTree });

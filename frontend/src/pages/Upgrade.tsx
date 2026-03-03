@@ -1,24 +1,54 @@
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetUserSubscriptionStatus } from '../hooks/useGetUserSubscriptionStatus';
-import { useUpgradeAccount } from '../hooks/useUpgradeAccount';
+import { useCreateCheckoutSession } from '../hooks/useCreateCheckoutSession';
+import { useIsStripeConfigured } from '../hooks/useStripeConfig';
+import { StripeSetupModal } from '../components/StripeSetupModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Check, Zap, Loader2, Crown, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Zap, Loader2, Crown, Sparkles, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function Upgrade() {
   const navigate = useNavigate();
   const { identity } = useInternetIdentity();
   const { data: subscriptionStatus, isLoading } = useGetUserSubscriptionStatus();
-  const upgradeMutation = useUpgradeAccount();
+  const { data: stripeConfigured, isLoading: stripeConfigLoading } = useIsStripeConfigured();
+  const checkoutMutation = useCreateCheckoutSession();
+  const [showStripeSetup, setShowStripeSetup] = useState(false);
 
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
   const isPremium = subscriptionStatus?.tier === 'premium';
 
   const handleUpgrade = async () => {
-    await upgradeMutation.mutateAsync();
+    if (!stripeConfigured) {
+      setShowStripeSetup(true);
+      return;
+    }
+
+    try {
+      const session = await checkoutMutation.mutateAsync([
+        {
+          productName: 'Media Share Premium',
+          productDescription: 'Unlimited uploads, 4K quality, priority support, and no ads',
+          currency: 'usd',
+          priceInCents: BigInt(999),
+          quantity: BigInt(1),
+        },
+      ]);
+
+      if (!session?.url) {
+        throw new Error('Stripe session missing url');
+      }
+
+      window.location.href = session.url;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Please try again later.';
+      toast.error('Checkout failed', { description: message });
+    }
   };
 
   if (!isAuthenticated) {
@@ -71,6 +101,15 @@ export function Upgrade() {
             <Sparkles className="w-4 h-4 text-chart-1" />
             <AlertDescription className="text-chart-1">
               You're already on the Premium plan! Enjoy all the benefits.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!stripeConfigLoading && !stripeConfigured && !isPremium && (
+          <Alert className="max-w-2xl mx-auto">
+            <AlertCircle className="w-4 h-4" />
+            <AlertDescription>
+              Payment system is not yet configured. Admin needs to set up Stripe to enable purchases.
             </AlertDescription>
           </Alert>
         )}
@@ -171,17 +210,17 @@ export function Upgrade() {
                   className="w-full mt-4 bg-gradient-to-r from-chart-1 to-chart-2 hover:opacity-90"
                   size="lg"
                   onClick={handleUpgrade}
-                  disabled={upgradeMutation.isPending}
+                  disabled={checkoutMutation.isPending || stripeConfigLoading}
                 >
-                  {upgradeMutation.isPending ? (
+                  {checkoutMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
+                      Redirecting to checkout...
                     </>
                   ) : (
                     <>
                       <Zap className="w-4 h-4 mr-2" />
-                      Upgrade Now
+                      Go Premium — $9.99/mo
                     </>
                   )}
                 </Button>
@@ -205,7 +244,7 @@ export function Upgrade() {
               <div>
                 <h3 className="font-semibold mb-2">What payment methods do you accept?</h3>
                 <p className="text-sm text-muted-foreground">
-                  We accept all major credit cards and cryptocurrency payments through the Internet Computer network.
+                  We accept all major credit and debit cards through our secure Stripe payment system.
                 </p>
               </div>
               <div>
@@ -214,10 +253,18 @@ export function Upgrade() {
                   All new users start with a free account. You can upgrade to Premium at any time to unlock additional features.
                 </p>
               </div>
+              <div>
+                <h3 className="font-semibold mb-2">How does billing work?</h3>
+                <p className="text-sm text-muted-foreground">
+                  You'll be charged $9.99/month. Your subscription renews automatically each month until you cancel.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <StripeSetupModal open={showStripeSetup} onClose={() => setShowStripeSetup(false)} />
     </div>
   );
 }

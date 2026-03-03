@@ -2,10 +2,15 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-view-count-increment-feature-in-the-videoplayer-page-so-that-view-counts-are-correctly-incremented-when-a-user-watches-a-video-the-current-logic-tracks-5-seconds-of-actual-watch-time-before-calling-useincrementvideoview-but-this-is-not-triggering-reliably-ensure-the-increment-fires-exactly-once-per-valid-viewing-session-and-that-the-updated-view-count-is-reflected-in-the-ui-afterward",
-      "featureTitle": "Fix the view count increment feature in the VideoPlayer page so that view counts are correctly incremented when a user watches a video. The current logic tracks 5 seconds of actual watch time before calling useIncrementVideoView, but this is not triggering reliably. Ensure the increment fires exactly once per valid viewing session and that the updated view count is reflected in the UI afterward.",
+      "featureId": "feature-integrate-stripe-checkout-on-the-frontend-so-authenticated-users-can-purchase-a-premium-subscription-add-a-checkout-flow-on-the-upgrade-page-that-initiates-a-stripe-payment-session-on-successful-payment-confirmation-call-the-backend-to-mark-the-user-as-premium",
+      "featureTitle": "Integrate Stripe Checkout on the frontend so authenticated users can purchase a Premium subscription. Add a checkout flow on the Upgrade page that initiates a Stripe payment session. On successful payment confirmation, call the backend to mark the user as premium.",
       "files": [
-        "frontend/src/pages/VideoPlayer.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/hooks/useCreateCheckoutSession.ts",
+        "frontend/src/hooks/useSetSubscriptionStatus.ts",
+        "frontend/src/pages/PaymentFailure.tsx",
+        "frontend/src/pages/PaymentSuccess.tsx",
+        "frontend/src/pages/Upgrade.tsx"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -14,10 +19,34 @@
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
         "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
+        "authorization@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-replace-the-hardcoded-free-tier-return-in-usegetusersubscriptionstatus-ts-with-a-real-backend-call-that-fetches-the-authenticated-user-s-subscription-status",
+      "featureTitle": "Replace the hardcoded free-tier return in useGetUserSubscriptionStatus.ts with a real backend call that fetches the authenticated user's subscription status.",
+      "files": [
+        "frontend/src/hooks/useGetUserSubscriptionStatus.ts"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

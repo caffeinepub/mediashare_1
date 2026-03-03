@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { SubscriptionStatus } from '../backend';
 
 export type SubscriptionTier = 'free' | 'premium';
 
-export interface SubscriptionStatus {
+export interface SubscriptionStatusResult {
   tier: SubscriptionTier;
   features: {
     unlimitedUploads: boolean;
@@ -16,20 +17,21 @@ export interface SubscriptionStatus {
 export function useGetUserSubscriptionStatus() {
   const { actor, isFetching } = useActor();
 
-  return useQuery<SubscriptionStatus>({
+  return useQuery<SubscriptionStatusResult>({
     queryKey: ['userSubscriptionStatus'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      
-      // TODO: Replace with actual backend call once implemented
-      // For now, return free tier as default
+
+      const status = await actor.getSubscriptionStatus();
+      const isPremium = status === SubscriptionStatus.premium;
+
       return {
-        tier: 'free',
+        tier: isPremium ? 'premium' : 'free',
         features: {
-          unlimitedUploads: false,
-          higherQualityLimits: false,
-          prioritySupport: false,
-          noAds: false,
+          unlimitedUploads: isPremium,
+          higherQualityLimits: isPremium,
+          prioritySupport: isPremium,
+          noAds: isPremium,
         },
       };
     },
