@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import { toast } from 'sonner';
-import { ExternalBlob } from '../backend';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+import { ExternalBlob } from "../backend";
+import { useActor } from "./useActor";
 
-type ErrorType = 'conversion_error' | 'network_error' | 'backend_error' | 'authentication_error';
-
-interface UploadError {
-  type: ErrorType;
-  message: string;
+interface UploadVideoParams {
+  title: string;
+  description: string;
+  tags?: string[];
+  file: File;
 }
 
 export function useVideoUpload() {
@@ -18,96 +18,60 @@ export function useVideoUpload() {
 
   const mutation = useMutation({
     mutationFn: async ({
-      file,
       title,
       description,
       tags = [],
-      onProgress,
-    }: {
-      file: File;
-      title: string;
-      description: string;
-      tags?: string[];
-      onProgress?: (progress: number) => void;
-    }) => {
-      if (!actor) {
-        const error: UploadError = {
-          type: 'authentication_error',
-          message: 'Please sign in to upload videos',
-        };
-        throw error;
-      }
+      file,
+    }: UploadVideoParams): Promise<string> => {
+      if (!actor) throw new Error("Actor not available");
 
-      try {
-        // Convert File to Uint8Array
-        const arrayBuffer = await file.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
+      setUploadProgress(5);
 
-        // Create ExternalBlob with progress tracking
-        const externalBlob = ExternalBlob.fromBytes(uint8Array).withUploadProgress((percentage) => {
-          setUploadProgress(percentage);
-          if (onProgress) onProgress(percentage);
-        });
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
 
-        // Upload video to backend with tags
-        const videoId = await actor.uploadVideo(title, description, tags, externalBlob);
+      setUploadProgress(20);
 
-        setUploadProgress(100);
-        if (onProgress) onProgress(100);
+      const externalBlob = ExternalBlob.fromBytes(
+        uint8Array,
+      ).withUploadProgress((percentage) =>
+        setUploadProgress(20 + Math.floor(percentage * 0.75)),
+      );
 
-        return { videoId, videoBlob: externalBlob };
-      } catch (error: any) {
-        console.error('Video upload error:', error);
-        
-        // Determine error type and provide user-friendly message
-        if (error.message?.includes('Unauthorized')) {
-          const uploadError: UploadError = {
-            type: 'authentication_error',
-            message: 'You must be signed in to upload videos',
-          };
-          throw uploadError;
-        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-          const uploadError: UploadError = {
-            type: 'network_error',
-            message: 'Network error. Please check your connection and try again.',
-          };
-          throw uploadError;
-        } else if (error instanceof TypeError || error.message?.includes('conversion')) {
-          const uploadError: UploadError = {
-            type: 'conversion_error',
-            message: 'Failed to process video file. Please try a different file.',
-          };
-          throw uploadError;
-        } else {
-          const uploadError: UploadError = {
-            type: 'backend_error',
-            message: error.message || 'Failed to upload video. Please try again.',
-          };
-          throw uploadError;
-        }
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const videoId = await (actor as any).uploadVideo(
+        title,
+        description,
+        tags,
+        externalBlob,
+      );
+
+      setUploadProgress(100);
+      return videoId as string;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['videos'] });
-      toast.success('Video uploaded successfully!');
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      toast.success("Video uploaded successfully!");
+      setUploadProgress(0);
     },
-    onError: (error: UploadError) => {
-      console.error('Upload mutation error:', error);
-      if (error.type !== 'network_error') {
-        toast.error(error.message);
-      }
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : "Upload failed.";
+      toast.error("Upload failed", { description: message });
+      setUploadProgress(0);
     },
   });
+
+  const reset = () => {
+    mutation.reset();
+    setUploadProgress(0);
+  };
 
   return {
     uploadVideo: mutation.mutateAsync,
     isUploading: mutation.isPending,
     uploadProgress,
-    error: mutation.error,
+    error: mutation.error instanceof Error ? mutation.error.message : null,
     isSuccess: mutation.isSuccess,
-    reset: () => {
-      mutation.reset();
-      setUploadProgress(0);
-    },
+    reset,
   };
 }

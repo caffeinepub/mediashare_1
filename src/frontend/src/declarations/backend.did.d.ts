@@ -10,45 +10,32 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface Comment {
-  'id' : bigint,
-  'content' : string,
-  'author' : Principal,
-  'timestamp' : Time,
+export interface RazorpayConfig { 'keyId' : string, 'keySecret' : string }
+export interface ShoppingItem {
+  'productName' : string,
+  'currency' : string,
+  'quantity' : bigint,
+  'priceInCents' : bigint,
+  'productDescription' : string,
 }
-export interface ExtendedVideo {
-  'title' : string,
-  'likeCount' : bigint,
-  'thumbnail' : [] | [ExternalBlob],
-  'file' : ExternalBlob,
-  'tags' : Array<string>,
-  'description' : string,
-  'viewCount' : bigint,
-  'commentCount' : bigint,
-  'uploader' : Principal,
-  'uploadTime' : Time,
+export interface StripeConfiguration {
+  'allowedCountries' : Array<string>,
+  'secretKey' : string,
 }
-export type ExternalBlob = Uint8Array;
-export interface Photo {
-  'title' : string,
-  'file' : Uint8Array,
-  'description' : string,
-  'uploader' : Principal,
-  'uploadTime' : Time,
-}
-export interface PhotoMetadata {
-  'id' : string,
-  'title' : string,
-  'description' : string,
-  'uploader' : Principal,
-  'uploadTime' : Time,
-}
-export interface Rating {
-  'value' : bigint,
-  'timestamp' : Time,
-  'reviewer' : Principal,
-}
+export type StripeSessionStatus = {
+    'completed' : { 'userPrincipal' : [] | [string], 'response' : string }
+  } |
+  { 'failed' : { 'error' : string } };
 export type Time = bigint;
+export interface TransformationInput {
+  'context' : Uint8Array,
+  'response' : http_request_result,
+}
+export interface TransformationOutput {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
+}
 export interface UserProfile {
   'channelName' : [] | [string],
   'name' : string,
@@ -57,23 +44,6 @@ export interface UserProfile {
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
-export interface UserStats {
-  'totalVideosUploaded' : bigint,
-  'accountCreation' : Time,
-  'totalPhotosUploaded' : bigint,
-}
-export interface VideoMetadata {
-  'id' : string,
-  'title' : string,
-  'likeCount' : bigint,
-  'thumbnail' : [] | [ExternalBlob],
-  'tags' : Array<string>,
-  'description' : string,
-  'viewCount' : bigint,
-  'commentCount' : bigint,
-  'uploader' : Principal,
-  'uploadTime' : Time,
-}
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
@@ -84,6 +54,12 @@ export interface _CaffeineStorageRefillInformation {
 export interface _CaffeineStorageRefillResult {
   'success' : [] | [boolean],
   'topped_up_amount' : [] | [bigint],
+}
+export interface http_header { 'value' : string, 'name' : string }
+export interface http_request_result {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
 }
 export interface _SERVICE {
   '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
@@ -102,63 +78,25 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'addComment' : ActorMethod<
-    [string, string],
-    {
-      'id' : bigint,
-      'content' : string,
-      'author' : Principal,
-      'timestamp' : Time,
-    }
-  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'deleteComment' : ActorMethod<[string, bigint], undefined>,
-  'deletePhoto' : ActorMethod<[string], undefined>,
-  'deleteVideo' : ActorMethod<[string], undefined>,
-  'getAllVideoRatings' : ActorMethod<[string], Array<Rating>>,
-  'getAverageRating' : ActorMethod<[string], number>,
-  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getChannelName' : ActorMethod<[Principal], string>,
-  'getComments' : ActorMethod<[string], Array<Comment>>,
-  'getPhoto' : ActorMethod<[string], Photo>,
-  'getRatingAnalytics' : ActorMethod<
-    [string],
-    {
-      'totalRatings' : bigint,
-      'ratingBreakdown' : Array<bigint>,
-      'averageRating' : number,
-    }
-  >,
-  'getTotalRatings' : ActorMethod<[string], bigint>,
-  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'getUserRatings' : ActorMethod<[], Array<[string, Rating]>>,
-  'getUserStats' : ActorMethod<[Principal], UserStats>,
-  'getVideo' : ActorMethod<[string], ExtendedVideo>,
-  'getVideoMetadata' : ActorMethod<[string], VideoMetadata>,
-  'incrementViewCount' : ActorMethod<[string], undefined>,
-  'isCallerAdmin' : ActorMethod<[], boolean>,
-  'likeVideo' : ActorMethod<[string], undefined>,
-  'listPhotos' : ActorMethod<[], Array<PhotoMetadata>>,
-  'listVideos' : ActorMethod<[], Array<VideoMetadata>>,
-  'markThumbnailGenerated' : ActorMethod<[string, ExternalBlob], undefined>,
-  'rateVideo' : ActorMethod<[string, bigint], undefined>,
-  'removeThumbnail' : ActorMethod<[string], undefined>,
-  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'searchVideos' : ActorMethod<[string], Array<VideoMetadata>>,
-  'setChannelName' : ActorMethod<[string], undefined>,
-  'setCustomThumbnail' : ActorMethod<[string, ExternalBlob], undefined>,
-  'updateComment' : ActorMethod<[string, bigint, string], undefined>,
-  'updatePhoto' : ActorMethod<[string, string, string], undefined>,
-  'updateVideo' : ActorMethod<
-    [string, string, string, Array<string>],
-    undefined
-  >,
-  'uploadPhoto' : ActorMethod<[string, string, Uint8Array], string>,
-  'uploadVideo' : ActorMethod<
-    [string, string, Array<string>, ExternalBlob],
+  'createCheckoutSession' : ActorMethod<
+    [Array<ShoppingItem>, string, string],
     string
   >,
+  'getAdSensePublisherId' : ActorMethod<[], [] | [string]>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
+  'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getRazorpayConfig' : ActorMethod<[], [] | [RazorpayConfig]>,
+  'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isRazorpayConfiguredLegacy' : ActorMethod<[], boolean>,
+  'isStripeConfigured' : ActorMethod<[], boolean>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setAdSensePublisherId' : ActorMethod<[string], undefined>,
+  'setRazorpayConfiguration' : ActorMethod<[string, string], undefined>,
+  'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
+  'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

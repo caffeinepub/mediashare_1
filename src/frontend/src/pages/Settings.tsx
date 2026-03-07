@@ -1,244 +1,438 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from '../hooks/useGetCallerUserProfile';
-import { useSaveCallerUserProfile } from '../hooks/useSaveCallerUserProfile';
-import { useSetChannelName } from '../hooks/useSetChannelName';
-import { useGetUserSubscriptionStatus } from '../hooks/useGetUserSubscriptionStatus';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Settings as SettingsIcon, Crown, Zap } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  Check,
+  CreditCard,
+  Crown,
+  IndianRupee,
+  Loader2,
+  Megaphone,
+  Settings as SettingsIcon,
+  Shield,
+  User,
+} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { RazorpaySetupModal } from "../components/RazorpaySetupModal";
+import { StripeSetupModal } from "../components/StripeSetupModal";
+import {
+  useGetAdSensePublisherId,
+  useSetAdSensePublisherId,
+} from "../hooks/useAdSenseConfig";
+import { useGetCallerUserProfile } from "../hooks/useGetCallerUserProfile";
+import { useGetUserSubscriptionStatus } from "../hooks/useGetUserSubscriptionStatus";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { useIsRazorpayConfigured } from "../hooks/useRazorpayConfig";
+import { useSaveCallerUserProfile } from "../hooks/useSaveCallerUserProfile";
+import { useIsStripeConfigured } from "../hooks/useStripeConfig";
 
-export function Settings() {
+export default function Settings() {
   const navigate = useNavigate();
   const { identity } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading } = useGetCallerUserProfile();
-  const { data: subscriptionStatus, isLoading: subscriptionLoading } = useGetUserSubscriptionStatus();
-  const saveProfileMutation = useSaveCallerUserProfile();
-  const setChannelNameMutation = useSetChannelName();
+  const { data: userProfile, isLoading: profileLoading } =
+    useGetCallerUserProfile();
+  const { data: subscriptionData, isLoading: subscriptionLoading } =
+    useGetUserSubscriptionStatus();
+  const saveProfile = useSaveCallerUserProfile();
 
-  const [name, setName] = useState('');
-  const [channelName, setChannelName] = useState('');
+  const { data: isStripeConfigured } = useIsStripeConfigured();
+  const { data: isRazorpayConfigured } = useIsRazorpayConfigured();
+  const { data: adSensePublisherId } = useGetAdSensePublisherId();
+  const setAdSensePublisherId = useSetAdSensePublisherId();
 
-  const isAuthenticated = !!identity;
-  const isPremium = subscriptionStatus?.tier === 'premium';
+  const [name, setName] = useState("");
+  const [channelName, setChannelName] = useState("");
+  const [showStripeSetup, setShowStripeSetup] = useState(false);
+  const [showRazorpaySetup, setShowRazorpaySetup] = useState(false);
+  const [publisherIdInput, setPublisherIdInput] = useState("");
 
   useEffect(() => {
     if (userProfile) {
-      setName(userProfile.name || '');
-      setChannelName(userProfile.channelName || '');
+      setName(userProfile.name ?? "");
+      setChannelName(userProfile.channelName ?? "");
     }
   }, [userProfile]);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="container py-16">
-        <Alert>
-          <AlertDescription>Please sign in to access settings.</AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate({ to: '/' })} className="mt-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (adSensePublisherId) {
+      setPublisherIdInput(adSensePublisherId);
+    }
+  }, [adSensePublisherId]);
 
-  if (profileLoading) {
-    return (
-      <div className="container py-16 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Loading settings...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
-    await saveProfileMutation.mutateAsync({
-      name: name.trim(),
-      channelName: channelName.trim() || undefined,
-      accountCreation: userProfile?.accountCreation || BigInt(Date.now() * 1000000),
+  const handleSaveProfile = async () => {
+    if (!userProfile) return;
+    await saveProfile.mutateAsync({
+      name,
+      channelName: channelName || undefined,
+      accountCreation: userProfile.accountCreation,
     });
   };
 
-  const handleSaveChannelName = async () => {
-    if (!channelName.trim()) return;
-    await setChannelNameMutation.mutateAsync(channelName.trim());
+  const handleSaveAdSense = async () => {
+    const trimmed = publisherIdInput.trim();
+    if (!trimmed) {
+      toast.error("Please enter a publisher ID");
+      return;
+    }
+    if (!trimmed.startsWith("ca-pub-")) {
+      toast.error("Publisher ID must start with ca-pub-");
+      return;
+    }
+    await setAdSensePublisherId.mutateAsync(trimmed);
   };
 
-  const remainingChars = 30 - channelName.length;
-  const isPending = saveProfileMutation.isPending || setChannelNameMutation.isPending;
+  if (!identity) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="py-12 text-center">
+            <Shield className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">
+              Please sign in to access settings.
+            </p>
+            <Button className="mt-4" onClick={() => navigate({ to: "/" })}>
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const isPremium = subscriptionData?.tier === "premium";
 
   return (
-    <div className="container py-8 max-w-3xl mx-auto">
-      <Button variant="ghost" onClick={() => navigate({ to: '/' })} className="mb-6">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
-            <SettingsIcon className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">Manage your profile and preferences</p>
-          </div>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <SettingsIcon className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
         </div>
 
-        {/* Subscription Status Card */}
-        <Card className={isPremium ? 'border-chart-1 bg-gradient-to-br from-chart-1/5 to-chart-2/5' : ''}>
+        {/* Subscription Status */}
+        <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                Subscription
-                {isPremium && <Crown className="w-5 h-5 text-chart-1" />}
-              </CardTitle>
-              {isPremium ? (
-                <Badge className="bg-chart-1 text-white">Premium</Badge>
-              ) : (
-                <Badge variant="outline">Free</Badge>
-              )}
-            </div>
-            <CardDescription>
-              {isPremium
-                ? 'You have access to all premium features'
-                : 'Upgrade to unlock unlimited uploads and more'}
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Crown className="w-4 h-4 text-primary" />
+              Subscription
+            </CardTitle>
+            <CardDescription>Your current plan and features</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {subscriptionLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Loading subscription status...
-              </div>
-            ) : isPremium ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Zap className="w-4 h-4 text-chart-1" />
-                  <span>Unlimited uploads</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Zap className="w-4 h-4 text-chart-1" />
-                  <span>4K quality support</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Zap className="w-4 h-4 text-chart-1" />
-                  <span>Priority support</span>
-                </div>
-              </div>
+              <Skeleton className="h-10 w-full" />
             ) : (
-              <Button
-                onClick={() => navigate({ to: '/upgrade' })}
-                className="w-full bg-gradient-to-r from-chart-1 to-chart-2 hover:opacity-90"
-              >
-                <Crown className="w-4 h-4 mr-2" />
-                Upgrade to Premium
-              </Button>
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-foreground">Current Plan</p>
+                    <p className="text-sm text-muted-foreground">
+                      {isPremium
+                        ? "All premium features unlocked"
+                        : "Limited features"}
+                    </p>
+                  </div>
+                  <Badge
+                    className={
+                      isPremium
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground"
+                    }
+                  >
+                    {isPremium ? (
+                      <>
+                        <Crown className="w-3 h-3 mr-1" />
+                        Premium
+                      </>
+                    ) : (
+                      "Free"
+                    )}
+                  </Badge>
+                </div>
+
+                {isPremium ? (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-1">
+                    {[
+                      "Unlimited video uploads",
+                      "HD & 4K video quality",
+                      "Advanced analytics",
+                      "Priority support",
+                      "Ad-free experience",
+                    ].map((feature) => (
+                      <div
+                        key={feature}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <Check className="w-3 h-3 text-primary" />
+                        <span className="text-foreground">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full"
+                    onClick={() => navigate({ to: "/upgrade" })}
+                  >
+                    <Crown className="w-4 h-4 mr-2" />
+                    Upgrade to Premium — $9.99/mo or ₹499/mo
+                  </Button>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
 
+        <Separator />
+
+        {/* Stripe Configuration */}
         <Card>
           <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
-            <CardDescription>Update your name and channel information</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="w-4 h-4 text-primary" />
+              Stripe Payments (USD)
+            </CardTitle>
+            <CardDescription>
+              Configure Stripe for USD payment processing
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  disabled={isPending}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="channelName">
-                  Channel Name
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {remainingChars} characters remaining
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground font-medium">
+                  Status:{" "}
+                  <span
+                    className={
+                      isStripeConfigured
+                        ? "text-green-600"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {isStripeConfigured ? "Configured ✓" : "Not configured"}
                   </span>
-                </Label>
-                <Input
-                  id="channelName"
-                  placeholder="Your channel name (3-30 characters)"
-                  value={channelName}
-                  onChange={(e) => setChannelName(e.target.value.slice(0, 30))}
-                  maxLength={30}
-                  disabled={isPending}
-                />
-                <p className="text-xs text-muted-foreground">
-                  This will be displayed instead of your principal ID. Must be 3-30 characters with only letters and numbers.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Accept credit/debit card payments in USD
                 </p>
               </div>
-              <div className="flex gap-3">
-                <Button
-                  type="submit"
-                  disabled={!name.trim() || isPending}
-                >
-                  {saveProfileMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Saving Profile...
-                    </>
-                  ) : (
-                    'Save Profile'
-                  )}
-                </Button>
-                {channelName.trim() && channelName !== userProfile?.channelName && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleSaveChannelName}
-                    disabled={isPending || channelName.length < 3}
-                  >
-                    {setChannelNameMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Updating...
-                      </>
-                    ) : (
-                      'Update Channel Name'
-                    )}
-                  </Button>
-                )}
-              </div>
-            </form>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStripeSetup(true)}
+              >
+                {isStripeConfigured ? "Reconfigure" : "Setup Stripe"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {identity && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Information</CardTitle>
-              <CardDescription>Your Internet Identity principal</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label>Principal ID</Label>
-                <div className="p-3 bg-muted rounded-md font-mono text-sm break-all">
-                  {identity.getPrincipal().toString()}
-                </div>
+        {/* Razorpay Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <IndianRupee className="w-4 h-4 text-primary" />
+              Razorpay Payments (INR)
+            </CardTitle>
+            <CardDescription>
+              Configure Razorpay for INR payment processing in India
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground font-medium">
+                  Status:{" "}
+                  <span
+                    className={
+                      isRazorpayConfigured
+                        ? "text-green-600"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {isRazorpayConfigured ? "Configured ✓" : "Not configured"}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Accept UPI, cards, and NetBanking payments in INR
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRazorpaySetup(true)}
+              >
+                {isRazorpayConfigured ? "Reconfigure" : "Setup Razorpay"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AdSense Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Megaphone className="w-4 h-4 text-primary" />
+              Google AdSense
+            </CardTitle>
+            <CardDescription>
+              Configure your Google AdSense publisher ID to display ads and earn
+              revenue
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="publisher-id">Publisher ID</Label>
+              <Input
+                id="publisher-id"
+                type="text"
+                placeholder="ca-pub-XXXXXXXXXXXXXXXX"
+                value={publisherIdInput}
+                onChange={(e) => setPublisherIdInput(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Find your Publisher ID in your{" "}
+                <a
+                  href="https://adsense.google.com/adsense/answer/105516"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline"
+                >
+                  AdSense account
+                </a>
+                . Format: <code>ca-pub-XXXXXXXXXXXXXXXX</code>
+              </p>
+            </div>
+            {adSensePublisherId && (
+              <p className="text-xs text-green-600 font-medium">
+                ✓ Currently configured: {adSensePublisherId}
+              </p>
+            )}
+            <Button
+              onClick={handleSaveAdSense}
+              disabled={
+                setAdSensePublisherId.isPending || !publisherIdInput.trim()
+              }
+              size="sm"
+            >
+              {setAdSensePublisherId.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Publisher ID"
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Separator />
+
+        {/* Profile Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <User className="w-4 h-4" />
+              Profile
+            </CardTitle>
+            <CardDescription>
+              Update your display name and channel name
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {profileLoading ? (
+              <>
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Display Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your display name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="channelName">Channel Name</Label>
+                  <Input
+                    id="channelName"
+                    value={channelName}
+                    onChange={(e) => setChannelName(e.target.value)}
+                    placeholder="Your channel name (optional)"
+                  />
+                </div>
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={saveProfile.isPending || !name.trim()}
+                  className="w-full"
+                >
+                  {saveProfile.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Profile"
+                  )}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Account Info */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Account Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Principal ID</span>
+              <span className="font-mono text-xs text-foreground truncate max-w-[200px]">
+                {identity.getPrincipal().toString()}
+              </span>
+            </div>
+            {userProfile?.accountCreation && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Member Since</span>
+                <span className="text-foreground">
+                  {new Date(
+                    Number(userProfile.accountCreation) / 1_000_000,
+                  ).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {showStripeSetup && (
+        <StripeSetupModal
+          open={showStripeSetup}
+          onClose={() => setShowStripeSetup(false)}
+        />
+      )}
+      {showRazorpaySetup && (
+        <RazorpaySetupModal
+          open={showRazorpaySetup}
+          onClose={() => setShowRazorpaySetup(false)}
+        />
+      )}
     </div>
   );
 }

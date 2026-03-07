@@ -1,17 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import type { Principal } from '@icp-sdk/core/principal';
+import type { Principal } from "@dfinity/principal";
+import { useQuery } from "@tanstack/react-query";
+import { useActor } from "./useActor";
 
-export function useChannelName(principal: Principal) {
+export function useChannelName(principal: Principal | string | undefined) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<string>({
-    queryKey: ['channelName', principal.toString()],
+  const principalStr = principal?.toString();
+
+  return useQuery<string | null>({
+    queryKey: ["channelName", principalStr],
     queryFn: async () => {
-      if (!actor) return principal.toString();
-      return actor.getChannelName(principal);
+      if (!actor) throw new Error("Actor not available");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getChannelName(principal);
     },
-    enabled: !!actor && !isFetching,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!actor && !isFetching && !!principal,
   });
 }

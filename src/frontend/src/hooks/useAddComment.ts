@@ -1,29 +1,27 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import { toast } from 'sonner';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useActor } from "./useActor";
 
 export function useAddComment() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ videoId, content }: { videoId: string; content: string }) => {
-      if (!actor) throw new Error('Actor not initialized');
-      return actor.addComment(videoId, content);
+    mutationFn: async ({
+      videoId,
+      content,
+    }: { videoId: string; content: string }) => {
+      if (!actor) throw new Error("Actor not available");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).addComment(videoId, content);
     },
-    onSuccess: (_, { videoId }) => {
-      // Invalidate comments and video queries to refresh counts
-      queryClient.invalidateQueries({ queryKey: ['comments', videoId] });
-      queryClient.invalidateQueries({ queryKey: ['video', videoId] });
-      queryClient.invalidateQueries({ queryKey: ['videos'] });
-      toast.success('Comment added!');
+    onSuccess: (_data, { videoId }) => {
+      queryClient.invalidateQueries({ queryKey: ["comments", videoId] });
+      queryClient.invalidateQueries({ queryKey: ["video", videoId] });
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
     },
-    onError: (error: any) => {
-      if (error.message?.includes('Unauthorized')) {
-        toast.error('Please sign in to comment');
-      } else {
-        toast.error('Failed to add comment');
-      }
+    onError: () => {
+      toast.error("Failed to add comment. Please try again.");
     },
   });
 }

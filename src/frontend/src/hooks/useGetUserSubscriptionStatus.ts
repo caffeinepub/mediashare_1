@@ -1,39 +1,33 @@
-import { useQuery } from '@tanstack/react-query';
-import { useActor } from './useActor';
+import { useQuery } from "@tanstack/react-query";
+import { useActor } from "./useActor";
+import { useInternetIdentity } from "./useInternetIdentity";
 
-export type SubscriptionTier = 'free' | 'premium';
-
-export interface SubscriptionStatus {
-  tier: SubscriptionTier;
-  features: {
-    unlimitedUploads: boolean;
-    higherQualityLimits: boolean;
-    prioritySupport: boolean;
-    noAds: boolean;
-  };
+interface SubscriptionResult {
+  tier: "free" | "premium";
+  canUploadHD: boolean;
+  canUploadUnlimited: boolean;
 }
 
 export function useGetUserSubscriptionStatus() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
-  return useQuery<SubscriptionStatus>({
-    queryKey: ['userSubscriptionStatus'],
+  return useQuery<SubscriptionResult>({
+    queryKey: ["userSubscriptionStatus"],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      
-      // TODO: Replace with actual backend call once implemented
-      // For now, return free tier as default
+      if (!actor) throw new Error("Actor not available");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const status = await (actor as any).getSubscriptionStatus();
+      const isPremium =
+        status === "premium" ||
+        status?.__kind__ === "premium" ||
+        (typeof status === "object" && "premium" in status);
       return {
-        tier: 'free',
-        features: {
-          unlimitedUploads: false,
-          higherQualityLimits: false,
-          prioritySupport: false,
-          noAds: false,
-        },
+        tier: isPremium ? "premium" : "free",
+        canUploadHD: isPremium,
+        canUploadUnlimited: isPremium,
       };
     },
-    enabled: !!actor && !isFetching,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!actor && !isFetching && !!identity,
   });
 }

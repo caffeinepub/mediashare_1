@@ -1,16 +1,23 @@
-import { useVideos } from '../hooks/useVideos';
-import { useSearchVideos } from '../hooks/useSearchVideos';
-import { VideoCard } from '../components/VideoCard';
-import { Loader2, Video, Search } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
-import { useState, useEffect } from 'react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Loader2, Search, Video } from "lucide-react";
+import { useEffect, useState } from "react";
+import { DataRestorationBanner } from "../components/DataRestorationBanner";
+import { VideoCard } from "../components/VideoCard";
+import { useSearchVideos } from "../hooks/useSearchVideos";
+import { useVideos } from "../hooks/useVideos";
 
 export function VideoGallery() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const { data: allVideos, isLoading: allVideosLoading, error: allVideosError } = useVideos();
-  const { data: searchResults, isLoading: searchLoading } = useSearchVideos(debouncedSearchTerm);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const {
+    data: allVideos,
+    isLoading: allVideosLoading,
+    error: allVideosError,
+    isFetching: allVideosFetching,
+  } = useVideos();
+  const { data: searchResults, isLoading: searchLoading } =
+    useSearchVideos(debouncedSearchTerm);
 
   // Debounce search term
   useEffect(() => {
@@ -23,10 +30,13 @@ export function VideoGallery() {
 
   const isSearching = debouncedSearchTerm.trim().length > 0;
   const videos = isSearching ? searchResults : allVideos;
-  const isLoading = isSearching ? searchLoading : allVideosLoading;
+  // Only show full-page loading spinner on initial load (no data yet), not on background refetch
+  const isLoading = isSearching
+    ? searchLoading
+    : allVideosLoading && !allVideos;
   const error = allVideosError;
 
-  if (isLoading && !videos) {
+  if (isLoading) {
     return (
       <div className="container py-16 flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
@@ -41,7 +51,9 @@ export function VideoGallery() {
     return (
       <div className="container py-16">
         <Alert variant="destructive">
-          <AlertDescription>Failed to load videos. Please try again later.</AlertDescription>
+          <AlertDescription>
+            Failed to load videos. Please try again later.
+          </AlertDescription>
         </Alert>
       </div>
     );
@@ -49,13 +61,20 @@ export function VideoGallery() {
 
   return (
     <div className="container py-8">
-      <div className="mb-8">
+      <DataRestorationBanner />
+
+      <div className="mb-8 mt-4">
         <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
           <Video className="w-8 h-8 text-chart-1" />
           Video Gallery
+          {allVideosFetching && !allVideosLoading && (
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground ml-2" />
+          )}
         </h1>
-        <p className="text-muted-foreground mb-6">Discover and watch videos from our community</p>
-        
+        <p className="text-muted-foreground mb-6">
+          Discover and watch videos from our community
+        </p>
+
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -74,10 +93,12 @@ export function VideoGallery() {
             <Video className="w-10 h-10 text-muted-foreground" />
           </div>
           <h3 className="text-xl font-semibold mb-2">
-            {isSearching ? 'No videos found' : 'No videos yet'}
+            {isSearching ? "No videos found" : "No videos yet"}
           </h3>
           <p className="text-muted-foreground">
-            {isSearching ? 'Try a different search term' : 'Be the first to upload a video!'}
+            {isSearching
+              ? "Try a different search term"
+              : "Be the first to upload a video!"}
           </p>
         </div>
       ) : (

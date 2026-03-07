@@ -1,17 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import type { ExtendedVideo } from '../backend';
+import { useQuery } from "@tanstack/react-query";
+import type { ExtendedVideo } from "../lib/types";
+import { useActor } from "./useActor";
 
-export function useVideo(videoId: string | undefined) {
-  const { actor, isFetching: actorFetching } = useActor();
+export function useVideo(videoId: string) {
+  const { actor, isFetching } = useActor();
 
-  return useQuery<ExtendedVideo>({
-    queryKey: ['video', videoId],
+  return useQuery<ExtendedVideo | null>({
+    queryKey: ["video", videoId],
     queryFn: async () => {
-      if (!actor || !videoId) throw new Error('Actor or videoId not available');
-      return actor.getVideo(videoId);
+      if (!actor) return null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getVideo(videoId);
     },
-    enabled: !!actor && !actorFetching && !!videoId,
-    retry: false,
+    enabled: !!actor && !isFetching && !!videoId,
   });
 }

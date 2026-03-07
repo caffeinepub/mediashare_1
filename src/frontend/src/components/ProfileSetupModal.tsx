@@ -1,30 +1,35 @@
-import { useState, useEffect } from 'react';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from '../hooks/useGetCallerUserProfile';
-import { useSaveCallerUserProfile } from '../hooks/useSaveCallerUserProfile';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useGetCallerUserProfile } from "../hooks/useGetCallerUserProfile";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { useSaveCallerUserProfile } from "../hooks/useSaveCallerUserProfile";
 
 export function ProfileSetupModal() {
   const { identity } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    isFetched,
+  } = useGetCallerUserProfile();
   const saveProfileMutation = useSaveCallerUserProfile();
-  
-  const [name, setName] = useState('');
-  const [channelName, setChannelName] = useState('');
+
+  const [name, setName] = useState("");
+  const [channelName, setChannelName] = useState("");
   const [open, setOpen] = useState(false);
 
   const isAuthenticated = !!identity;
-  const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
+  const showProfileSetup =
+    isAuthenticated && !profileLoading && isFetched && userProfile === null;
 
   useEffect(() => {
     setOpen(showProfileSetup);
@@ -46,11 +51,15 @@ export function ProfileSetupModal() {
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Welcome! Set up your profile</DialogTitle>
           <DialogDescription>
-            Please provide your name and an optional channel name to get started.
+            Please provide your name and an optional channel name to get
+            started.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -95,7 +104,7 @@ export function ProfileSetupModal() {
                 Saving...
               </>
             ) : (
-              'Continue'
+              "Continue"
             )}
           </Button>
         </form>

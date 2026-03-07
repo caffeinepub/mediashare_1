@@ -1,119 +1,108 @@
-import { Card } from '@/components/ui/card';
-import { useNavigate } from '@tanstack/react-router';
-import { ChannelNameDisplay } from './ChannelNameDisplay';
-import { formatViewCount } from '../utils/formatters';
-import type { VideoMetadata } from '../backend';
+import { Link } from "@tanstack/react-router";
+import { Clock, Eye } from "lucide-react";
+import React from "react";
+import type { VideoMetadata } from "../lib/types";
+import { formatTimeAgo, formatViewCount } from "../utils/formatters";
+import { ChannelNameDisplay } from "./ChannelNameDisplay";
 
 interface VideoCardProps {
   video: VideoMetadata;
-  variant?: 'default' | 'compact';
+  variant?: "default" | "compact";
 }
 
-function formatTimeAgo(timestamp: bigint): string {
-  const now = Date.now();
-  const uploadTime = Number(timestamp) / 1000000; // Convert nanoseconds to milliseconds
-  const diffMs = now - uploadTime;
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  const diffWeeks = Math.floor(diffDays / 7);
-  const diffMonths = Math.floor(diffDays / 30);
-  const diffYears = Math.floor(diffDays / 365);
+export function VideoCard({ video, variant = "default" }: VideoCardProps) {
+  const thumbnailUrl = video.thumbnail
+    ? typeof video.thumbnail === "string"
+      ? video.thumbnail
+      : null
+    : null;
 
-  if (diffSeconds < 60) return 'just now';
-  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-  if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
-  if (diffMonths < 12) return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`;
-  return `${diffYears} year${diffYears !== 1 ? 's' : ''} ago`;
-}
-
-export function VideoCard({ video, variant = 'default' }: VideoCardProps) {
-  const navigate = useNavigate();
-
-  if (variant === 'compact') {
+  if (variant === "compact") {
     return (
-      <div
-        className="cursor-pointer group flex gap-2 hover:bg-muted/50 rounded-lg p-2 transition-colors"
-        onClick={() => navigate({ to: '/video/$id', params: { id: video.id } })}
+      <Link
+        to="/video/$id"
+        params={{ id: video.id }}
+        className="flex gap-3 group"
       >
-        {/* Compact thumbnail */}
-        <div className="w-40 aspect-video bg-muted relative overflow-hidden rounded-lg shrink-0">
-          {video.thumbnail ? (
+        <div className="w-40 flex-shrink-0 aspect-video rounded-lg overflow-hidden bg-muted relative">
+          {thumbnailUrl ? (
             <img
-              src={video.thumbnail.getDirectURL()}
+              src={thumbnailUrl}
               alt={video.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <img
               src="/assets/generated/video-placeholder.dim_320x180.png"
               alt={video.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           )}
         </div>
-
-        {/* Compact video info */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+        <div className="flex-1 min-w-0 space-y-1">
+          <h3 className="font-medium text-sm text-foreground line-clamp-2 leading-snug">
             {video.title}
           </h3>
-          <div className="text-xs text-muted-foreground">
-            <ChannelNameDisplay principal={video.uploader} />
-          </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-            <span>{formatViewCount(video.viewCount)}</span>
-            <span>•</span>
-            <span>{formatTimeAgo(video.uploadTime)}</span>
+          <ChannelNameDisplay
+            principal={video.uploader}
+            className="text-xs text-muted-foreground"
+          />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              {formatViewCount(video.viewCount)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {formatTimeAgo(video.uploadTime)}
+            </span>
           </div>
         </div>
-      </div>
+      </Link>
     );
   }
 
   return (
-    <div
-      className="cursor-pointer group"
-      onClick={() => navigate({ to: '/video/$id', params: { id: video.id } })}
-    >
-      {/* Thumbnail */}
-      <div className="aspect-video bg-muted relative overflow-hidden rounded-xl mb-3">
-        {video.thumbnail ? (
-          <img
-            src={video.thumbnail.getDirectURL()}
-            alt={video.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-            loading="lazy"
-          />
-        ) : (
-          <img
-            src="/assets/generated/video-placeholder.dim_320x180.png"
-            alt={video.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-          />
-        )}
-      </div>
+    <Link to="/video/$id" params={{ id: video.id }} className="block group">
+      <div className="rounded-xl overflow-hidden bg-card border border-border hover:border-primary/30 transition-all duration-200 hover:shadow-md">
+        {/* Thumbnail */}
+        <div className="aspect-video bg-muted relative overflow-hidden">
+          {thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt={video.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <img
+              src="/assets/generated/video-placeholder.dim_320x180.png"
+              alt={video.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          )}
+        </div>
 
-      {/* Video info */}
-      <div className="flex gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+        {/* Info */}
+        <div className="p-3 space-y-1">
+          <h3 className="font-medium text-sm text-foreground line-clamp-2 leading-snug">
             {video.title}
           </h3>
-          <div className="text-xs text-muted-foreground">
-            <ChannelNameDisplay principal={video.uploader} />
-          </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-            <span>{formatViewCount(video.viewCount)}</span>
-            <span>•</span>
-            <span>{formatTimeAgo(video.uploadTime)}</span>
+          <ChannelNameDisplay
+            principal={video.uploader}
+            className="text-xs text-muted-foreground"
+          />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              {formatViewCount(video.viewCount)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {formatTimeAgo(video.uploadTime)}
+            </span>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

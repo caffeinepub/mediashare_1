@@ -1,13 +1,13 @@
-import { usePhotos } from '../hooks/usePhotos';
-import { PhotoCard } from '../components/PhotoCard';
-import { Loader2, Image, Search } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
-import { useState, useEffect, useMemo } from 'react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Image, Loader2, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { PhotoCard } from "../components/PhotoCard";
+import { usePhotos } from "../hooks/usePhotos";
 
 export function PhotoGallery() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const { data: photos, isLoading, error } = usePhotos();
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function PhotoGallery() {
     return photos.filter(
       (photo) =>
         photo.title.toLowerCase().includes(lowercaseQuery) ||
-        photo.description.toLowerCase().includes(lowercaseQuery)
+        photo.description.toLowerCase().includes(lowercaseQuery),
     );
   }, [photos, debouncedSearchTerm]);
 
@@ -45,7 +45,9 @@ export function PhotoGallery() {
     return (
       <div className="container py-16">
         <Alert variant="destructive">
-          <AlertDescription>Failed to load photos. Please try again later.</AlertDescription>
+          <AlertDescription>
+            Failed to load photos. Please try again later.
+          </AlertDescription>
         </Alert>
       </div>
     );
@@ -61,7 +63,8 @@ export function PhotoGallery() {
           <div>
             <h1 className="text-3xl font-bold">Photo Gallery</h1>
             <p className="text-muted-foreground">
-              {filteredPhotos.length} {filteredPhotos.length === 1 ? 'photo' : 'photos'}
+              {filteredPhotos.length}{" "}
+              {filteredPhotos.length === 1 ? "photo" : "photos"}
             </p>
           </div>
         </div>
@@ -83,7 +86,9 @@ export function PhotoGallery() {
           <Image className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
           <h2 className="text-xl font-semibold mb-2">No photos found</h2>
           <p className="text-muted-foreground">
-            {debouncedSearchTerm ? 'Try a different search term' : 'Be the first to upload a photo!'}
+            {debouncedSearchTerm
+              ? "Try a different search term"
+              : "Be the first to upload a photo!"}
           </p>
         </div>
       ) : (

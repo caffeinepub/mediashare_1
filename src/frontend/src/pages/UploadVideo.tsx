@@ -1,71 +1,100 @@
-import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useVideoUpload } from '../hooks/useVideoUpload';
-import { UpgradePrompt } from '../components/UpgradePrompt';
-import { ThumbnailSelector } from '../components/ThumbnailSelector';
-import { TagInput } from '../components/TagInput';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Video, Upload, Loader2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
-import { ExternalBlob } from '../backend';
-import { useMemo } from 'react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+  Upload,
+  Video,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { TagInput } from "../components/TagInput";
+import { ThumbnailSelector } from "../components/ThumbnailSelector";
+import UpgradePrompt from "../components/UpgradePrompt";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { useVideoUpload } from "../hooks/useVideoUpload";
+import type { ExtendedVideo } from "../lib/types";
 
-const ACCEPTED_VIDEO_FORMATS = ['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg'];
-const MAX_FILE_SIZE_MB = 500; // 500MB limit
+const ACCEPTED_VIDEO_FORMATS = [
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  "video/ogg",
+];
+const MAX_FILE_SIZE_MB = 20480; // 20 GB
 
 export function UploadVideo() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { identity } = useInternetIdentity();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
-  const [uploadedVideoBlob, setUploadedVideoBlob] = useState<ExternalBlob | null>(null);
-  const { uploadVideo, isUploading, uploadProgress, error, isSuccess, reset } = useVideoUpload();
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+
+  const { uploadVideo, isUploading, uploadProgress, error, isSuccess, reset } =
+    useVideoUpload();
 
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  // Get video URL for thumbnail generation
-  const videoUrl = useMemo(() => {
-    if (!uploadedVideoBlob) return null;
-    return uploadedVideoBlob.getDirectURL();
-  }, [uploadedVideoBlob]);
+  // Build a minimal ExtendedVideo-like object for ThumbnailSelector after upload
+  const uploadedVideoForThumbnail = useMemo((): ExtendedVideo | null => {
+    if (!uploadedVideoId || !uploadedVideoUrl) return null;
+    return {
+      title,
+      description,
+      tags,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      uploader: identity?.getPrincipal() as any,
+      uploadTime: BigInt(Date.now()) * BigInt(1_000_000),
+      likeCount: BigInt(0),
+      commentCount: BigInt(0),
+      viewCount: BigInt(0),
+      thumbnail: null,
+      file: {
+        getDirectURL: () => uploadedVideoUrl,
+      },
+    };
+  }, [uploadedVideoId, uploadedVideoUrl, title, description, tags, identity]);
 
-  const validateFile = (file: File): string | null => {
-    // Check file type
-    if (!ACCEPTED_VIDEO_FORMATS.includes(file.type)) {
-      return `Invalid file format. Please upload a video file (MP4, MOV, WebM, or OGG).`;
+  const validateFile = (f: File): string | null => {
+    if (!ACCEPTED_VIDEO_FORMATS.includes(f.type)) {
+      return "Invalid file format. Please upload a video file (MP4, MOV, WebM, or OGG).";
     }
-
-    // Check file size
-    const fileSizeMB = file.size / 1024 / 1024;
+    const fileSizeMB = f.size / 1024 / 1024;
     if (fileSizeMB > MAX_FILE_SIZE_MB) {
       return `File size exceeds ${MAX_FILE_SIZE_MB}MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`;
     }
-
     return null;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValidationError(null);
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       const selectedFile = e.target.files[0];
-      const error = validateFile(selectedFile);
-      
-      if (error) {
-        setValidationError(error);
+      const err = validateFile(selectedFile);
+      if (err) {
+        setValidationError(err);
         setFile(null);
-        e.target.value = '';
+        e.target.value = "";
       } else {
         setFile(selectedFile);
       }
@@ -76,48 +105,49 @@ export function UploadVideo() {
     e.preventDefault();
     if (!file || !title.trim()) return;
 
-    // Validate again before upload
-    const error = validateFile(file);
-    if (error) {
-      setValidationError(error);
+    const err = validateFile(file);
+    if (err) {
+      setValidationError(err);
       return;
     }
 
     try {
-      const result = await uploadVideo({ title, description, file, tags });
-      if (result) {
-        setUploadedVideoId(result.videoId);
-        setUploadedVideoBlob(result.videoBlob);
-        // Invalidate videos query to refresh the homepage
-        queryClient.invalidateQueries({ queryKey: ['videos'] });
+      const videoId = await uploadVideo({ title, description, file, tags });
+      if (videoId) {
+        setUploadedVideoId(videoId);
+        // Create a local object URL for the uploaded file so ThumbnailSelector can show the video
+        const localUrl = URL.createObjectURL(file);
+        setUploadedVideoUrl(localUrl);
+        queryClient.invalidateQueries({ queryKey: ["videos"] });
       }
-    } catch (err) {
-      // Error is handled by the mutation
-      console.error('Upload failed:', err);
+    } catch {
+      // Error handled by mutation onError
     }
   };
 
   const handleRetry = () => {
     if (file && title.trim()) {
-      handleSubmit(new Event('submit') as any);
+      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
     }
   };
 
   const handleUploadAnother = () => {
-    setTitle('');
-    setDescription('');
+    setTitle("");
+    setDescription("");
     setTags([]);
     setFile(null);
     setValidationError(null);
     setUploadedVideoId(null);
-    setUploadedVideoBlob(null);
+    if (uploadedVideoUrl) {
+      URL.revokeObjectURL(uploadedVideoUrl);
+    }
+    setUploadedVideoUrl(null);
     reset();
   };
 
   const handleThumbnailComplete = () => {
-    // Navigate to the video player page
     if (uploadedVideoId) {
-      navigate({ to: '/video/$id', params: { id: uploadedVideoId } });
+      navigate({ to: "/video/$id", params: { id: uploadedVideoId } });
     }
   };
 
@@ -127,7 +157,7 @@ export function UploadVideo() {
         <Alert>
           <AlertDescription>Please sign in to upload videos.</AlertDescription>
         </Alert>
-        <Button onClick={() => navigate({ to: '/' })} className="mt-4">
+        <Button onClick={() => navigate({ to: "/" })} className="mt-4">
           Back to Home
         </Button>
       </div>
@@ -135,15 +165,14 @@ export function UploadVideo() {
   }
 
   // Show thumbnail selector after successful upload
-  if (isSuccess && uploadedVideoId && videoUrl) {
+  if (isSuccess && uploadedVideoId && uploadedVideoForThumbnail) {
     return (
       <div className="container py-8 max-w-4xl mx-auto">
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
             <ThumbnailSelector
               videoId={uploadedVideoId}
-              videoUrl={videoUrl}
-              onComplete={handleThumbnailComplete}
+              video={uploadedVideoForThumbnail}
             />
           </div>
           <div className="md:col-span-1">
@@ -159,13 +188,16 @@ export function UploadVideo() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-2">
+                <Button onClick={handleThumbnailComplete} className="w-full">
+                  Go to Video
+                </Button>
                 <Button
                   variant="outline"
-                  onClick={() => handleThumbnailComplete()}
+                  onClick={handleUploadAnother}
                   className="w-full"
                 >
-                  Skip Thumbnail
+                  Upload Another
                 </Button>
               </CardContent>
             </Card>
@@ -187,7 +219,9 @@ export function UploadVideo() {
                 </div>
                 <div>
                   <CardTitle>Upload Video</CardTitle>
-                  <CardDescription>Share your video with the world</CardDescription>
+                  <CardDescription>
+                    Share your video with the world
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -203,6 +237,19 @@ export function UploadVideo() {
                   </AlertDescription>
                 </Alert>
 
+                {/* Reassuring message shown only during active upload */}
+                {isUploading && (
+                  <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/30">
+                    <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
+                      <strong>Your existing videos are safe.</strong> Uploading
+                      this video will not affect or remove any of your
+                      previously uploaded content. All your videos will remain
+                      visible once this upload completes.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="video-file">Video File *</Label>
                   <Input
@@ -215,7 +262,8 @@ export function UploadVideo() {
                   />
                   {file && !validationError && (
                     <p className="text-sm text-muted-foreground">
-                      Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                      Selected: {file.name} (
+                      {(file.size / 1024 / 1024).toFixed(2)} MB)
                     </p>
                   )}
                   {validationError && (
@@ -251,7 +299,7 @@ export function UploadVideo() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tags">Tags</Label>
+                  <Label>Tags</Label>
                   <TagInput
                     tags={tags}
                     onChange={setTags}
@@ -262,7 +310,9 @@ export function UploadVideo() {
                 {isUploading && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Uploading...</span>
+                      <span className="text-muted-foreground">
+                        Uploading...
+                      </span>
                       <span className="font-medium">{uploadProgress}%</span>
                     </div>
                     <Progress value={uploadProgress} className="h-2" />
@@ -273,25 +323,29 @@ export function UploadVideo() {
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="flex items-center justify-between">
-                      <span>{error.message}</span>
-                      {error.type === 'network_error' && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleRetry}
-                          className="ml-4"
-                        >
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Retry
-                        </Button>
-                      )}
+                      <span>{error}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRetry}
+                        className="ml-4 flex-shrink-0"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Retry
+                      </Button>
                     </AlertDescription>
                   </Alert>
                 )}
 
                 <div className="flex gap-3">
-                  <Button type="submit" disabled={!file || !title.trim() || isUploading || !!validationError} className="flex-1">
+                  <Button
+                    type="submit"
+                    disabled={
+                      !file || !title.trim() || isUploading || !!validationError
+                    }
+                    className="flex-1"
+                  >
                     {isUploading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -307,7 +361,7 @@ export function UploadVideo() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate({ to: '/videos' })}
+                    onClick={() => navigate({ to: "/videos" })}
                     disabled={isUploading}
                   >
                     Cancel

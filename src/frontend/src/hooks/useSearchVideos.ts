@@ -1,29 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import type { ExtendedVideo } from '../backend';
+import { useQuery } from "@tanstack/react-query";
+import type { ExtendedVideo, VideoMetadata } from "../lib/types";
+import { useActor } from "./useActor";
 
 export function useSearchVideos(searchTerm: string) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching } = useActor();
 
-  return useQuery<Array<{ id: string; data: ExtendedVideo }>>({
-    queryKey: ['videos', 'search', searchTerm],
+  return useQuery<ExtendedVideo[]>({
+    queryKey: ["searchVideos", searchTerm],
     queryFn: async () => {
-      if (!actor) return [];
-      
-      const metadata = await actor.searchVideos(searchTerm);
-      
-      const videosWithData = await Promise.all(
+      if (!actor || !searchTerm.trim()) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const actorAny = actor as any;
+      const metadata: VideoMetadata[] = await actorAny.searchVideos(searchTerm);
+      const videos = await Promise.all(
         metadata.map(async (meta) => {
-          const videoData = await actor.getVideo(meta.id);
-          return {
-            id: meta.id,
-            data: videoData,
-          };
-        })
+          const videoData = await actorAny.getVideo(meta.id);
+          return { ...videoData, id: meta.id } as ExtendedVideo;
+        }),
       );
-
-      return videosWithData;
+      return videos.filter(Boolean);
     },
-    enabled: !!actor && !actorFetching && searchTerm.trim().length > 0,
+    enabled: !!actor && !isFetching && !!searchTerm.trim(),
   });
 }

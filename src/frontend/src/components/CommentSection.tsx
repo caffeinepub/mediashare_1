@@ -1,20 +1,20 @@
-import { useState } from 'react';
-import { useComments } from '../hooks/useComments';
-import { useAddComment } from '../hooks/useAddComment';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageSquare, Send } from 'lucide-react';
-import { ChannelNameDisplay } from './ChannelNameDisplay';
-import { formatDistanceToNow } from 'date-fns';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { formatDistanceToNow } from "date-fns";
+import { Loader2, MessageSquare, Send } from "lucide-react";
+import { useState } from "react";
+import { useAddComment } from "../hooks/useAddComment";
+import { useComments } from "../hooks/useComments";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { ChannelNameDisplay } from "./ChannelNameDisplay";
 
 interface CommentSectionProps {
   videoId: string;
 }
 
 export function CommentSection({ videoId }: CommentSectionProps) {
-  const [commentText, setCommentText] = useState('');
+  const [commentText, setCommentText] = useState("");
   const { identity } = useInternetIdentity();
   const { data: comments, isLoading } = useComments(videoId);
   const addCommentMutation = useAddComment();
@@ -30,7 +30,7 @@ export function CommentSection({ videoId }: CommentSectionProps) {
       content: commentText.trim(),
     });
 
-    setCommentText('');
+    setCommentText("");
   };
 
   return (
@@ -87,7 +87,10 @@ export function CommentSection({ videoId }: CommentSectionProps) {
             comments.map((comment) => {
               const commentDate = new Date(Number(comment.timestamp) / 1000000);
               return (
-                <div key={Number(comment.id)} className="flex gap-3 p-4 rounded-lg bg-muted/50">
+                <div
+                  key={Number(comment.id)}
+                  className="flex gap-3 p-4 rounded-lg bg-muted/50"
+                >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center shrink-0">
                     <span className="text-white text-sm font-medium">
                       {comment.author.toString().slice(0, 2).toUpperCase()}
@@ -102,7 +105,9 @@ export function CommentSection({ videoId }: CommentSectionProps) {
                         {formatDistanceToNow(commentDate, { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {comment.content}
+                    </p>
                   </div>
                 </div>
               );

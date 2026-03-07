@@ -1,17 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import type { Photo } from '../backend';
+import { useQuery } from "@tanstack/react-query";
+import type { Photo } from "../lib/types";
+import { useActor } from "./useActor";
 
-export function usePhoto(photoId: string | undefined) {
-  const { actor, isFetching: actorFetching } = useActor();
+export function usePhoto(photoId: string) {
+  const { actor, isFetching } = useActor();
 
-  return useQuery<Photo>({
-    queryKey: ['photo', photoId],
+  return useQuery<Photo | null>({
+    queryKey: ["photo", photoId],
     queryFn: async () => {
-      if (!actor || !photoId) throw new Error('Actor or photoId not available');
-      return actor.getPhoto(photoId);
+      if (!actor) return null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getPhoto(photoId);
     },
-    enabled: !!actor && !actorFetching && !!photoId,
-    retry: false,
+    enabled: !!actor && !isFetching && !!photoId,
   });
 }

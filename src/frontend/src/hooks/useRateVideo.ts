@@ -1,31 +1,27 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import { toast } from 'sonner';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useActor } from "./useActor";
 
-export function useRateVideo() {
+export function useRateVideo(videoId: string) {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ videoId, stars }: { videoId: string; stars: number }) => {
-      if (!actor) throw new Error('Actor not available');
-      await actor.rateVideo(videoId, BigInt(stars));
+    mutationFn: async (stars: number) => {
+      if (!actor) throw new Error("Actor not available");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (actor as any).rateVideo(videoId, BigInt(stars));
     },
-    onSuccess: (_, { videoId }) => {
-      // Invalidate all rating-related queries
-      queryClient.invalidateQueries({ queryKey: ['video', videoId] });
-      queryClient.invalidateQueries({ queryKey: ['videos'] });
-      queryClient.invalidateQueries({ queryKey: ['averageRating', videoId] });
-      queryClient.invalidateQueries({ queryKey: ['totalRatings', videoId] });
-      queryClient.invalidateQueries({ queryKey: ['userRating', videoId] });
-      toast.success('Rating submitted successfully!');
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["averageRating", videoId] });
+      queryClient.invalidateQueries({ queryKey: ["totalRatings", videoId] });
+      queryClient.invalidateQueries({ queryKey: ["userRating", videoId] });
+      toast.success("Rating submitted!");
     },
-    onError: (error: any) => {
-      if (error.message?.includes('Unauthorized')) {
-        toast.error('Please sign in to rate videos');
-      } else {
-        toast.error('Failed to submit rating');
-      }
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to submit rating.";
+      toast.error("Rating failed", { description: message });
     },
   });
 }

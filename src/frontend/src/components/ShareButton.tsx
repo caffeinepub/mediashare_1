@@ -1,21 +1,31 @@
-import { Button } from '@/components/ui/button';
-import { Share2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Share2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ShareButtonProps {
   className?: string;
-  variant?: 'default' | 'outline' | 'ghost' | 'secondary' | 'destructive' | 'link';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
+  variant?:
+    | "default"
+    | "outline"
+    | "ghost"
+    | "secondary"
+    | "destructive"
+    | "link";
+  size?: "default" | "sm" | "lg" | "icon";
 }
 
-export function ShareButton({ className, variant = 'outline', size = 'default' }: ShareButtonProps) {
+export function ShareButton({
+  className,
+  variant = "outline",
+  size = "default",
+}: ShareButtonProps) {
   const handleShare = async () => {
     const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard!');
-    } catch (err) {
-      toast.error('Failed to copy link');
+      toast.success("Link copied to clipboard!");
+    } catch (_err) {
+      toast.error("Failed to copy link");
     }
   };
 

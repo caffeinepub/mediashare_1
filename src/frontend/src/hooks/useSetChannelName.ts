@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import { toast } from 'sonner';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useActor } from "./useActor";
 
 export function useSetChannelName() {
   const { actor } = useActor();
@@ -8,30 +8,25 @@ export function useSetChannelName() {
 
   return useMutation({
     mutationFn: async (channelName: string) => {
-      if (!actor) throw new Error('Actor not initialized');
-      
-      // Validate channel name length
-      const trimmed = channelName.trim();
-      if (trimmed.length < 3 || trimmed.length > 30) {
-        throw new Error('Channel name must be between 3 and 30 characters');
+      if (!actor) throw new Error("Actor not available");
+      if (channelName.trim().length < 2) {
+        throw new Error("Channel name must be at least 2 characters.");
       }
-      
-      await actor.setChannelName(channelName);
+      if (channelName.trim().length > 50) {
+        throw new Error("Channel name must be 50 characters or fewer.");
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (actor as any).setChannelName(channelName.trim());
     },
     onSuccess: () => {
-      // Invalidate all channel name queries and user profile
-      queryClient.invalidateQueries({ queryKey: ['channelName'] });
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-      toast.success('Channel name updated!');
+      queryClient.invalidateQueries({ queryKey: ["channelName"] });
+      queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
+      toast.success("Channel name updated!");
     },
-    onError: (error: any) => {
-      if (error.message?.includes('Unauthorized')) {
-        toast.error('Please sign in to set a channel name');
-      } else if (error.message?.includes('Invalid channel name')) {
-        toast.error('Channel name must be 3-30 characters with only letters and numbers');
-      } else {
-        toast.error(error.message || 'Failed to update channel name');
-      }
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to update channel name.";
+      toast.error("Update failed", { description: message });
     },
   });
 }
