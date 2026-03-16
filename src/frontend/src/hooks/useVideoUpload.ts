@@ -2,17 +2,16 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ExternalBlob } from "../backend";
-import { useActor } from "./useActor";
 
 interface UploadVideoParams {
   title: string;
   description: string;
   tags?: string[];
   file: File;
+  actor: any;
 }
 
 export function useVideoUpload() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -22,24 +21,26 @@ export function useVideoUpload() {
       description,
       tags = [],
       file,
+      actor,
     }: UploadVideoParams): Promise<string> => {
-      if (!actor) throw new Error("Actor not available");
+      if (!actor) {
+        throw new Error("Backend se connection nahi hua. Page reload karein.");
+      }
 
       setUploadProgress(5);
 
       const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      setUploadProgress(20);
+      setUploadProgress(10);
 
       const externalBlob = ExternalBlob.fromBytes(
         uint8Array,
       ).withUploadProgress((percentage) =>
-        setUploadProgress(20 + Math.floor(percentage * 0.75)),
+        setUploadProgress(10 + Math.floor(percentage * 85)),
       );
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const videoId = await (actor as any).uploadVideo(
+      const videoId = await actor.uploadVideo(
         title,
         description,
         tags,
@@ -51,12 +52,12 @@ export function useVideoUpload() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["videos"] });
-      toast.success("Video uploaded successfully!");
+      toast.success("Video upload ho gayi!");
       setUploadProgress(0);
     },
     onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Upload failed.";
-      toast.error("Upload failed", { description: message });
+      const message = err instanceof Error ? err.message : "Upload fail hua.";
+      toast.error("Upload fail hua", { description: message });
       setUploadProgress(0);
     },
   });

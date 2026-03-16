@@ -10,6 +10,26 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AdRevenue { 'impressions' : bigint, 'totalRevenue' : number }
+export interface Comment {
+  'id' : bigint,
+  'content' : string,
+  'author' : Principal,
+  'timestamp' : Time,
+}
+export interface ExtendedVideo {
+  'title' : string,
+  'likeCount' : bigint,
+  'thumbnail' : [] | [ExternalBlob],
+  'file' : ExternalBlob,
+  'tags' : Array<string>,
+  'description' : string,
+  'viewCount' : bigint,
+  'commentCount' : bigint,
+  'uploader' : Principal,
+  'uploadTime' : Time,
+}
+export type ExternalBlob = Uint8Array;
 export interface RazorpayConfig { 'keyId' : string, 'keySecret' : string }
 export interface ShoppingItem {
   'productName' : string,
@@ -44,6 +64,23 @@ export interface UserProfile {
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface UserStats {
+  'totalVideosUploaded' : bigint,
+  'accountCreation' : Time,
+  'totalPhotosUploaded' : bigint,
+}
+export interface VideoMetadata {
+  'id' : string,
+  'title' : string,
+  'likeCount' : bigint,
+  'thumbnail' : [] | [ExternalBlob],
+  'tags' : Array<string>,
+  'description' : string,
+  'viewCount' : bigint,
+  'commentCount' : bigint,
+  'uploader' : Principal,
+  'uploadTime' : Time,
+}
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
@@ -78,25 +115,56 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addComment' : ActorMethod<[string, string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createCheckoutSession' : ActorMethod<
     [Array<ShoppingItem>, string, string],
     string
   >,
+  'deleteVideo' : ActorMethod<[string], undefined>,
+  'getAdRevenueForCaller' : ActorMethod<[], number>,
+  'getAdRevenueForVideo' : ActorMethod<[string], AdRevenue>,
   'getAdSensePublisherId' : ActorMethod<[], [] | [string]>,
+  'getAverageRating' : ActorMethod<[string], number>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getChannelName' : ActorMethod<[Principal], [] | [string]>,
+  'getComments' : ActorMethod<[string], Array<Comment>>,
   'getRazorpayConfig' : ActorMethod<[], [] | [RazorpayConfig]>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
+  'getTotalRatings' : ActorMethod<[string], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getUserRatings' : ActorMethod<
+    [],
+    Array<{ 'rating' : bigint, 'videoId' : string }>
+  >,
+  'getUserStats' : ActorMethod<[Principal], [] | [UserStats]>,
+  'getVideo' : ActorMethod<[string], [] | [ExtendedVideo]>,
+  'incrementVideoView' : ActorMethod<[string], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isRazorpayConfiguredLegacy' : ActorMethod<[], boolean>,
   'isStripeConfigured' : ActorMethod<[], boolean>,
+  'likeVideo' : ActorMethod<[string], undefined>,
+  'listVideos' : ActorMethod<[], Array<VideoMetadata>>,
+  'markThumbnailGenerated' : ActorMethod<[string, ExternalBlob], undefined>,
+  'rateVideo' : ActorMethod<[string, bigint], undefined>,
+  'recordAdImpression' : ActorMethod<[string], undefined>,
+  'removeVideoThumbnail' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setAdSensePublisherId' : ActorMethod<[string], undefined>,
+  'setChannelName' : ActorMethod<[string], undefined>,
+  'setCustomThumbnail' : ActorMethod<[string, ExternalBlob], undefined>,
   'setRazorpayConfiguration' : ActorMethod<[string, string], undefined>,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
+  'updateVideo' : ActorMethod<
+    [string, string, string, Array<string>],
+    undefined
+  >,
+  'uploadVideo' : ActorMethod<
+    [string, string, Array<string>, ExternalBlob],
+    string
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

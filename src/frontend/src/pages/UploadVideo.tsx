@@ -1,379 +1,374 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
   CheckCircle2,
   Loader2,
   RefreshCw,
-  ShieldCheck,
   Upload,
   Video,
+  Wifi,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { TagInput } from "../components/TagInput";
-import { ThumbnailSelector } from "../components/ThumbnailSelector";
-import UpgradePrompt from "../components/UpgradePrompt";
+import { useRef, useState } from "react";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useVideoUpload } from "../hooks/useVideoUpload";
-import type { ExtendedVideo } from "../lib/types";
 
-const ACCEPTED_VIDEO_FORMATS = [
-  "video/mp4",
-  "video/quicktime",
-  "video/webm",
-  "video/ogg",
+const ACCEPTED_VIDEO_TYPES = [
+  ".mp4",
+  ".mov",
+  ".mkv",
+  ".avi",
+  ".3gp",
+  ".webm",
+  ".m4v",
+  ".flv",
+  ".wmv",
 ];
-const MAX_FILE_SIZE_MB = 20480; // 20 GB
+const MAX_SIZE_BYTES = 20 * 1024 * 1024 * 1024; // 20 GB
 
 export function UploadVideo() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { identity } = useInternetIdentity();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [file, setFile] = useState<File | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
-  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
-
+  const { actor, isFetching, isError, retry } = useActor();
   const { uploadVideo, isUploading, uploadProgress, error, isSuccess, reset } =
     useVideoUpload();
 
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [tags, setTags] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+  const isConnecting = isFetching && !actor;
+  const isActorReady = !!actor;
 
-  // Build a minimal ExtendedVideo-like object for ThumbnailSelector after upload
-  const uploadedVideoForThumbnail = useMemo((): ExtendedVideo | null => {
-    if (!uploadedVideoId || !uploadedVideoUrl) return null;
-    return {
-      title,
-      description,
-      tags,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      uploader: identity?.getPrincipal() as any,
-      uploadTime: BigInt(Date.now()) * BigInt(1_000_000),
-      likeCount: BigInt(0),
-      commentCount: BigInt(0),
-      viewCount: BigInt(0),
-      thumbnail: null,
-      file: {
-        getDirectURL: () => uploadedVideoUrl,
-      },
-    };
-  }, [uploadedVideoId, uploadedVideoUrl, title, description, tags, identity]);
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFileError(null);
+    const selected = e.target.files?.[0];
+    if (!selected) return;
 
-  const validateFile = (f: File): string | null => {
-    if (!ACCEPTED_VIDEO_FORMATS.includes(f.type)) {
-      return "Invalid file format. Please upload a video file (MP4, MOV, WebM, or OGG).";
-    }
-    const fileSizeMB = f.size / 1024 / 1024;
-    if (fileSizeMB > MAX_FILE_SIZE_MB) {
-      return `File size exceeds ${MAX_FILE_SIZE_MB}MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`;
-    }
-    return null;
-  };
+    const ext = `.${selected.name.split(".").pop()?.toLowerCase()}`;
+    const isValidType =
+      selected.type.startsWith("video/") || ACCEPTED_VIDEO_TYPES.includes(ext);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValidationError(null);
-    if (e.target.files?.[0]) {
-      const selectedFile = e.target.files[0];
-      const err = validateFile(selectedFile);
-      if (err) {
-        setValidationError(err);
-        setFile(null);
-        e.target.value = "";
-      } else {
-        setFile(selectedFile);
-      }
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file || !title.trim()) return;
-
-    const err = validateFile(file);
-    if (err) {
-      setValidationError(err);
+    if (!isValidType) {
+      setFileError(
+        "Sirf video files allowed hain (MP4, MKV, MOV, AVI, 3GP, WebM, etc.)",
+      );
       return;
     }
 
+    if (selected.size > MAX_SIZE_BYTES) {
+      setFileError("File size 20 GB se zyada nahi honi chahiye.");
+      return;
+    }
+
+    setFile(selected);
+  }
+
+  async function handleUpload() {
+    if (!file || !title.trim() || isUploading || !actor) return;
+
+    const tagList = tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
     try {
-      const videoId = await uploadVideo({ title, description, file, tags });
-      if (videoId) {
-        setUploadedVideoId(videoId);
-        // Create a local object URL for the uploaded file so ThumbnailSelector can show the video
-        const localUrl = URL.createObjectURL(file);
-        setUploadedVideoUrl(localUrl);
-        queryClient.invalidateQueries({ queryKey: ["videos"] });
-      }
+      await uploadVideo({
+        title: title.trim(),
+        description: description.trim(),
+        tags: tagList,
+        file,
+        actor,
+      });
     } catch {
-      // Error handled by mutation onError
+      // error shown via toast
     }
-  };
+  }
 
-  const handleRetry = () => {
-    if (file && title.trim()) {
-      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-    }
-  };
-
-  const handleUploadAnother = () => {
+  function handleReset() {
+    reset();
     setTitle("");
     setDescription("");
-    setTags([]);
+    setTags("");
     setFile(null);
-    setValidationError(null);
-    setUploadedVideoId(null);
-    if (uploadedVideoUrl) {
-      URL.revokeObjectURL(uploadedVideoUrl);
-    }
-    setUploadedVideoUrl(null);
-    reset();
-  };
+    setFileError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
 
-  const handleThumbnailComplete = () => {
-    if (uploadedVideoId) {
-      navigate({ to: "/video/$id", params: { id: uploadedVideoId } });
-    }
-  };
-
-  if (!isAuthenticated) {
+  // --- Success screen ---
+  if (isSuccess) {
     return (
-      <div className="container py-16">
-        <Alert>
-          <AlertDescription>Please sign in to upload videos.</AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate({ to: "/" })} className="mt-4">
-          Back to Home
-        </Button>
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-center max-w-sm">
+          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Upload Ho Gayi!</h2>
+          <p className="text-muted-foreground mb-6">
+            Aapki video successfully upload ho gayi hai.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button
+              onClick={handleReset}
+              variant="outline"
+              data-ocid="upload.secondary_button"
+            >
+              Aur Upload Karein
+            </Button>
+            <Button
+              onClick={() => navigate({ to: "/" })}
+              data-ocid="upload.primary_button"
+            >
+              Home Jaayein
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Show thumbnail selector after successful upload
-  if (isSuccess && uploadedVideoId && uploadedVideoForThumbnail) {
+  // --- Not logged in ---
+  if (!isAuthenticated) {
     return (
-      <div className="container py-8 max-w-4xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <ThumbnailSelector
-              videoId={uploadedVideoId}
-              video={uploadedVideoForThumbnail}
-            />
-          </div>
-          <div className="md:col-span-1">
-            <Card className="border-green-500/50 bg-green-500/5">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Upload Complete!</CardTitle>
-                    <CardDescription>Now select a thumbnail</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button onClick={handleThumbnailComplete} className="w-full">
-                  Go to Video
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleUploadAnother}
-                  className="w-full"
-                >
-                  Upload Another
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-center max-w-sm">
+          <Video className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Login Karein</h2>
+          <p className="text-muted-foreground">
+            Video upload karne ke liye pehle Internet Identity se login karein.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container py-8 max-w-4xl mx-auto">
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
-                  <Video className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <CardTitle>Upload Video</CardTitle>
-                  <CardDescription>
-                    Share your video with the world
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <Alert>
-                  <AlertDescription className="text-sm">
-                    <strong>File Requirements:</strong>
-                    <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Accepted formats: MP4, MOV, WebM, OGG</li>
-                      <li>Maximum file size: {MAX_FILE_SIZE_MB}MB</li>
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-
-                {/* Reassuring message shown only during active upload */}
-                {isUploading && (
-                  <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/30">
-                    <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
-                      <strong>Your existing videos are safe.</strong> Uploading
-                      this video will not affect or remove any of your
-                      previously uploaded content. All your videos will remain
-                      visible once this upload completes.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="video-file">Video File *</Label>
-                  <Input
-                    id="video-file"
-                    type="file"
-                    accept=".mp4,.mov,.webm,.ogv,video/mp4,video/quicktime,video/webm,video/ogg"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                    required
-                  />
-                  {file && !validationError && (
-                    <p className="text-sm text-muted-foreground">
-                      Selected: {file.name} (
-                      {(file.size / 1024 / 1024).toFixed(2)} MB)
-                    </p>
-                  )}
-                  {validationError && (
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>{validationError}</AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
-                  <Input
-                    id="title"
-                    placeholder="Enter video title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    disabled={isUploading}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Enter video description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    disabled={isUploading}
-                    rows={4}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Tags</Label>
-                  <TagInput
-                    tags={tags}
-                    onChange={setTags}
-                    disabled={isUploading}
-                  />
-                </div>
-
-                {isUploading && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Uploading...
-                      </span>
-                      <span className="font-medium">{uploadProgress}%</span>
-                    </div>
-                    <Progress value={uploadProgress} className="h-2" />
-                  </div>
-                )}
-
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="flex items-center justify-between">
-                      <span>{error}</span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRetry}
-                        className="ml-4 flex-shrink-0"
-                      >
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Retry
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="flex gap-3">
-                  <Button
-                    type="submit"
-                    disabled={
-                      !file || !title.trim() || isUploading || !!validationError
-                    }
-                    className="flex-1"
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Video
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate({ to: "/videos" })}
-                    disabled={isUploading}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Video Upload Karein</h1>
+          <p className="text-muted-foreground mt-1">
+            Apni video MediaShare par share karein
+          </p>
         </div>
 
-        <div className="md:col-span-1">
-          <UpgradePrompt />
+        {/* Server Status Banner */}
+        {isError ? (
+          <div
+            className="flex items-center justify-between gap-2 text-sm px-4 py-3 rounded-lg mb-6 bg-destructive/10 text-destructive"
+            data-ocid="upload.error_state"
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Server se connect nahi ho paaya.</span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => retry()}
+              className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10"
+              data-ocid="upload.secondary_button"
+            >
+              <RefreshCw className="w-3 h-3 mr-1" />
+              Retry
+            </Button>
+          </div>
+        ) : isConnecting ? (
+          <div
+            className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg mb-6 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300"
+            data-ocid="upload.loading_state"
+          >
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            <span>Server se connect ho raha hai, thoda wait karein...</span>
+          </div>
+        ) : isActorReady ? (
+          <div
+            className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg mb-6 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+            data-ocid="upload.success_state"
+          >
+            <Wifi className="w-4 h-4 shrink-0" />
+            <span>Server connected — upload ke liye taiyaar</span>
+          </div>
+        ) : null}
+
+        {/* Upload Form */}
+        <div className="space-y-6">
+          {/* File Picker */}
+          <div
+            className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary hover:bg-accent/30 transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) =>
+              e.key === "Enter" && fileInputRef.current?.click()
+            }
+            data-ocid="upload.dropzone"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={handleFileChange}
+              data-ocid="upload.upload_button"
+            />
+            {file ? (
+              <div className="space-y-1">
+                <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
+                <p className="font-semibold text-green-600 dark:text-green-400">
+                  {file.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {(file.size / (1024 * 1024)).toFixed(1)} MB
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                >
+                  Badlein
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Upload className="w-12 h-12 text-muted-foreground mx-auto" />
+                <p className="font-semibold text-lg">Video choose karein</p>
+                <p className="text-sm text-muted-foreground">
+                  MP4, MKV, MOV, AVI, 3GP, WebM — max 20 GB
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Browse
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {fileError && (
+            <p
+              className="text-sm text-destructive"
+              data-ocid="upload.error_state"
+            >
+              {fileError}
+            </p>
+          )}
+
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              placeholder="Apni video ka title likhein"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              disabled={isUploading}
+              data-ocid="upload.input"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Video ke baare mein likhein (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isUploading}
+              rows={3}
+              data-ocid="upload.textarea"
+            />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags (comma se alag karein)</Label>
+            <Input
+              id="tags"
+              placeholder="jaise: cricket, funny, vlog"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              disabled={isUploading}
+            />
+          </div>
+
+          {/* Upload Progress */}
+          {isUploading && (
+            <div className="space-y-2" data-ocid="upload.loading_state">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Upload ho rahi hai...
+                </span>
+                <span className="font-medium">{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-3" />
+              <p className="text-xs text-muted-foreground text-center">
+                Band mat karein — upload chal rahi hai
+              </p>
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <div
+              className="bg-destructive/10 text-destructive text-sm px-4 py-3 rounded-lg"
+              data-ocid="upload.error_state"
+            >
+              {error}
+            </div>
+          )}
+
+          {/* Upload Button */}
+          <Button
+            className="w-full h-12 text-base"
+            onClick={handleUpload}
+            disabled={!file || !title.trim() || isUploading || !isActorReady}
+            data-ocid="upload.submit_button"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Upload ho rahi
+                hai ({uploadProgress}%)
+              </>
+            ) : isConnecting ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Server connect
+                ho raha hai...
+              </>
+            ) : isError ? (
+              <>
+                <AlertCircle className="w-5 h-5 mr-2" /> Server not connected —
+                Retry karein
+              </>
+            ) : !file ? (
+              <>
+                <Upload className="w-5 h-5 mr-2" /> Pehle video choose karein
+              </>
+            ) : !title.trim() ? (
+              <>
+                <Upload className="w-5 h-5 mr-2" /> Title likhein
+              </>
+            ) : (
+              <>
+                <Upload className="w-5 h-5 mr-2" /> Upload Karein
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>
